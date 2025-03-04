@@ -3,17 +3,19 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
+from dotenv import load_dotenv
+import os
+
 from app.user import user
 from app.admin import admin
 
-from config import TOKEN
 
 from app.database.models import async_main
 
 
 async def main():
-    bot = Bot(token=TOKEN,
-              default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    load_dotenv()
+    bot = Bot(token=os.getenv('TOKEN'))
     
     dp = Dispatcher()
     dp.include_routers(user, admin)
