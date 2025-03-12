@@ -29,6 +29,9 @@ class User(Base):
     # Отношение к точке
     point: Mapped["Point"] = relationship("Point", back_populates="users")
 
+    # Обратное отношение к логам
+    logs: Mapped[list["Log"]] = relationship("Log", back_populates="user")
+
 
 class Point(Base):
     __tablename__ = 'points'
@@ -56,14 +59,17 @@ class Cluster(Base):
 
 
 
+from sqlalchemy.orm import relationship
+
 class Log(Base):
     __tablename__ = 'logs'
     
     id: Mapped[int] = mapped_column(primary_key=True)
-    client_id: Mapped[int] = mapped_column(Integer)  # ID клиента
-    activity: Mapped[str] = mapped_column(String(50))  # Тип активности (например, registration, bag_full, shipment, admin_call)
-    question: Mapped[str] = mapped_column(String(255), nullable=True)  # Вопрос (может быть пустым)
-    bags_count: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков (может быть пустым)
+    client_id: Mapped[int] = mapped_column(ForeignKey('users.id'))  # Внешний ключ на таблицу users
+    shop_name: Mapped[str] = mapped_column(String(100), nullable=True)  # Название магазина
+    activity: Mapped[str] = mapped_column(String(50))  # Тип активности
+    question: Mapped[str] = mapped_column(String(255), nullable=True)  # Вопрос
+    bags_count: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков
     alum_kg: Mapped[float] = mapped_column(Float, nullable=True)  # Алюминий (кг)
     alum_price: Mapped[float] = mapped_column(Float, nullable=True)  # Цена алюминия
     alum_total: Mapped[float] = mapped_column(Float, nullable=True)  # Сумма алюминия
@@ -78,7 +84,12 @@ class Log(Base):
     mixed_total: Mapped[float] = mapped_column(Float, nullable=True)  # Сумма смешанного мусора
     total_pay: Mapped[float] = mapped_column(Float, nullable=True)  # Итого к оплате
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)  # Время записи
-    
+
+    # Связь с моделью User
+    user: Mapped["User"] = relationship("User", back_populates="logs")
+
+
+
 
 class Shipment(Base):
     __tablename__ = 'shipments'

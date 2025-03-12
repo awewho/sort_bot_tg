@@ -10,13 +10,13 @@ from datetime import datetime
 
 from app.database.requests import (
     get_driver_clusters, get_points_by_cluster, update_point_status, add_event, add_log, get_point_by_id,
-    get_all_points, get_all_clusters, get_all_drivers, add_shipment, get_user_by_tg_id, get_report_data
+    get_all_points, get_all_clusters, get_all_drivers, add_shipment, get_user_by_tg_id, get_report_data, update_bags_count, get_user_by_point_id
 )
 from app.states import DriverRoute, Notifications, Reports, ShipmentStates
-from app.keyboards import driver_keyboard, notification_keyboard, report_keyboard, admin_keyboard
+from app.keyboards import driver_keyboard, notification_keyboard, report_keyboard, admin_keyboard, confirm_keyboard
 
 
-ADMIN_ID = [753755508]
+ADMIN_ID = [753755508, 1582399282]
 # Идентификатор администратора
 
 admin = Router()
@@ -55,7 +55,7 @@ async def process_points_report(callback: CallbackQuery, state: FSMContext):
     if points:
         report_message = "Отчет по точкам:\n"
         for point in points:
-            report_message += f"Точка: {point.address}, Мешков: {point.bags_count}, Кластер: {point.cluster_id}\n"
+            report_message += f"Точка: {point.shop_name}, Мешков: {point.bags_count}, Кластер: {point.cluster_id}\n"
         
         # Разбиваем сообщение на части
         messages = await split_message(report_message)
@@ -64,8 +64,10 @@ async def process_points_report(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer('Нет данных по точкам.')
     
-    await state.clear()
+    # Не очищаем состояние, чтобы пользователь мог выбрать другой отчет
+    await callback.message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
 
+# Обработчик отчета по кластерам
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_cluster")
 async def process_clusters_report(callback: CallbackQuery, state: FSMContext):
     clusters = await get_all_clusters()
@@ -73,7 +75,13 @@ async def process_clusters_report(callback: CallbackQuery, state: FSMContext):
     if clusters:
         report_message = "Отчет по кластерам:\n"
         for cluster in clusters:
-            report_message += f"Кластер: {cluster.name}, Водитель: {cluster.driver_id}\n"
+            # Получаем все точки в кластере
+            points = await get_points_by_cluster(cluster.id)
+            total_bags = sum(point.bags_count for point in points)  # Суммируем количество мешков
+            report_message += (
+                f"Кластер: {cluster.name} "
+                f"Всего мешков: {total_bags}\n"
+            )
         
         # Разбиваем сообщение на части
         messages = await split_message(report_message)
@@ -82,8 +90,10 @@ async def process_clusters_report(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer('Нет данных по кластерам.')
     
-    await state.clear()
+    # Не очищаем состояние, чтобы пользователь мог выбрать другой отчет
+    await callback.message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
 
+# Обработчик отчета по водителям
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_drivers")
 async def process_drivers_report(callback: CallbackQuery, state: FSMContext):
     drivers = await get_all_drivers()
@@ -100,8 +110,8 @@ async def process_drivers_report(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer('Нет данных по водителям.')
     
-    await state.clear()
-
+    # Не очищаем состояние, чтобы пользователь мог выбрать другой отчет
+    await callback.message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
 
 
 
@@ -194,50 +204,6 @@ async def process_form_route(callback: CallbackQuery):
         await callback.message.answer('У вас нет закрепленных кластеров.')
     
     await callback.answer()
-
-@admin.callback_query(F.data == "collect_bag")
-async def process_collect_bag(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer('Введите ID точки, на которой вы забрали мешок:')
-    await state.set_state(Notifications.weight)
-    await callback.answer()
-
-@admin.message(Notifications.weight)
-async def process_weight(message: Message, state: FSMContext):
-    point_id = int(message.text)
-    await state.update_data(point_id=point_id)
-    await message.answer('Введите вес мешка:')
-    await state.set_state(Notifications.price)
-
-@admin.message(Notifications.price)
-async def process_price(message: Message, state: FSMContext):
-    weight = float(message.text)
-    await state.update_data(weight=weight)
-    await message.answer('Введите стоимость мешка:')
-    await state.set_state(Notifications.new_bag)
-
-@admin.message(Notifications.new_bag)
-async def process_new_bag(message: Message, state: FSMContext):
-    price = float(message.text)
-    user_data = await state.get_data()
-    point_id = user_data['point_id']
-    weight = user_data['weight']
-    
-    # Добавляем событие в базу данных
-    await add_event(point_id, message.from_user.id, "collect_bag", weight, price)
-    
-    # Обновляем статус точки
-    await update_point_status(point_id, bags_count=0)
-    
-    # Отправляем уведомление пользователю
-    point = await get_point_by_id(point_id)
-    if point and point.user_id:
-        await message.bot.send_message(point.user_id, f"Ваш мешок с мусором был забран. Вес: {weight} кг, Стоимость: {price} руб.")
-    
-    await message.answer('Мешок успешно забран. Выдан новый мешок.', reply_markup=confirm_keyboard())
-    await state.clear()
-
-
-
 @admin.callback_query(F.data == "add_shipment")
 async def process_add_shipment(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer('Введите ID точки:')
@@ -246,91 +212,118 @@ async def process_add_shipment(callback: CallbackQuery, state: FSMContext):
 
 @admin.message(ShipmentStates.point_id)
 async def process_point_id(message: Message, state: FSMContext):
-    point_id = int(message.text)
-    await state.update_data(point_id=point_id)
-    await message.answer('Введите вес алюминия (кг):')
-    await state.set_state(ShipmentStates.alum_kg)
+    try:
+        point_id = int(message.text)
+        await state.update_data(point_id=point_id)
+        await message.answer('Введите вес алюминия (кг):')
+        await state.set_state(ShipmentStates.alum_kg)
+    except ValueError:
+        await message.answer("Ошибка: ID точки должен быть целым числом. Пожалуйста, введите ID точки заново.")
 
 @admin.message(ShipmentStates.alum_kg)
 async def process_alum_kg(message: Message, state: FSMContext):
-    alum_kg = float(message.text)
-    await state.update_data(alum_kg=alum_kg)
-    
-    if alum_kg == 0:
-        await state.update_data(alum_price=0.0)
-        await message.answer('Вес алюминия равен 0. Переходим к PET.')
-        await message.answer('Введите вес PET (кг):')
-        await state.set_state(ShipmentStates.pet_kg)
-    else:
-        await message.answer('Введите цену за кг алюминия:')
-        await state.set_state(ShipmentStates.alum_price)
+    try:
+        alum_kg = float(message.text)
+        await state.update_data(alum_kg=alum_kg)
+        
+        if alum_kg == 0:
+            await state.update_data(alum_price=0.0)
+            await message.answer('Вес алюминия равен 0. Переходим к PET.')
+            await message.answer('Введите вес PET (кг):')
+            await state.set_state(ShipmentStates.pet_kg)
+        else:
+            await message.answer('Введите цену за кг алюминия:')
+            await state.set_state(ShipmentStates.alum_price)
+    except ValueError:
+        await message.answer("Ошибка: Вес алюминия должен быть числом. Пожалуйста, введите вес алюминия заново.")
 
 @admin.message(ShipmentStates.alum_price)
 async def process_alum_price(message: Message, state: FSMContext):
-    alum_price = float(message.text)
-    await state.update_data(alum_price=alum_price)
-    await message.answer('Введите вес PET (кг):')
-    await state.set_state(ShipmentStates.pet_kg)
+    try:
+        alum_price = float(message.text)
+        await state.update_data(alum_price=alum_price)
+        await message.answer('Введите вес PET (кг):')
+        await state.set_state(ShipmentStates.pet_kg)
+    except ValueError:
+        await message.answer("Ошибка: Цена за кг алюминия должна быть числом. Пожалуйста, введите цену заново.")
 
 @admin.message(ShipmentStates.pet_kg)
 async def process_pet_kg(message: Message, state: FSMContext):
-    pet_kg = float(message.text)
-    await state.update_data(pet_kg=pet_kg)
-    
-    if pet_kg == 0:
-        await state.update_data(pet_price=0.0)
-        await message.answer('Вес PET равен 0. Переходим к стеклу.')
-        await message.answer('Введите вес стекла (кг):')
-        await state.set_state(ShipmentStates.glass_kg)
-    else:
-        await message.answer('Введите цену за кг PET:')
-        await state.set_state(ShipmentStates.pet_price)
+    try:
+        pet_kg = float(message.text)
+        await state.update_data(pet_kg=pet_kg)
+        
+        if pet_kg == 0:
+            await state.update_data(pet_price=0.0)
+            await message.answer('Вес PET равен 0. Переходим к стеклу.')
+            await message.answer('Введите вес стекла (кг):')
+            await state.set_state(ShipmentStates.glass_kg)
+        else:
+            await message.answer('Введите цену за кг PET:')
+            await state.set_state(ShipmentStates.pet_price)
+    except ValueError:
+        await message.answer("Ошибка: Вес PET должен быть числом. Пожалуйста, введите вес PET заново.")
 
 @admin.message(ShipmentStates.pet_price)
 async def process_pet_price(message: Message, state: FSMContext):
-    pet_price = float(message.text)
-    await state.update_data(pet_price=pet_price)
-    await message.answer('Введите вес стекла (кг):')
-    await state.set_state(ShipmentStates.glass_kg)
+    try:
+        pet_price = float(message.text)
+        await state.update_data(pet_price=pet_price)
+        await message.answer('Введите вес стекла (кг):')
+        await state.set_state(ShipmentStates.glass_kg)
+    except ValueError:
+        await message.answer("Ошибка: Цена за кг PET должна быть числом. Пожалуйста, введите цену заново.")
 
 @admin.message(ShipmentStates.glass_kg)
 async def process_glass_kg(message: Message, state: FSMContext):
-    glass_kg = float(message.text)
-    await state.update_data(glass_kg=glass_kg)
-    
-    if glass_kg == 0:
-        await state.update_data(glass_price=0.0)
-        await message.answer('Вес стекла равен 0. Переходим к смешанному мусору.')
-        await message.answer('Введите вес смешанного мусора (кг):')
-        await state.set_state(ShipmentStates.mixed_kg)
-    else:
-        await message.answer('Введите цену за кг стекла:')
-        await state.set_state(ShipmentStates.glass_price)
+    try:
+        glass_kg = float(message.text)
+        await state.update_data(glass_kg=glass_kg)
+        
+        if glass_kg == 0:
+            await state.update_data(glass_price=0.0)
+            await message.answer('Вес стекла равен 0. Переходим к смешанному мусору.')
+            await message.answer('Введите вес смешанного мусора (кг):')
+            await state.set_state(ShipmentStates.mixed_kg)
+        else:
+            await message.answer('Введите цену за кг стекла:')
+            await state.set_state(ShipmentStates.glass_price)
+    except ValueError:
+        await message.answer("Ошибка: Вес стекла должен быть числом. Пожалуйста, введите вес стекла заново.")
 
 @admin.message(ShipmentStates.glass_price)
 async def process_glass_price(message: Message, state: FSMContext):
-    glass_price = float(message.text)
-    await state.update_data(glass_price=glass_price)
-    await message.answer('Введите вес смешанного мусора (кг):')
-    await state.set_state(ShipmentStates.mixed_kg)
+    try:
+        glass_price = float(message.text)
+        await state.update_data(glass_price=glass_price)
+        await message.answer('Введите вес смешанного мусора (кг):')
+        await state.set_state(ShipmentStates.mixed_kg)
+    except ValueError:
+        await message.answer("Ошибка: Цена за кг стекла должна быть числом. Пожалуйста, введите цену заново.")
 
 @admin.message(ShipmentStates.mixed_kg)
 async def process_mixed_kg(message: Message, state: FSMContext):
-    mixed_kg = float(message.text)
-    await state.update_data(mixed_kg=mixed_kg)
-    
-    if mixed_kg == 0:
-        await state.update_data(mixed_price=0.0)
-        await finalize_shipment(message, state)
-    else:
-        await message.answer('Введите цену за кг смешанного мусора:')
-        await state.set_state(ShipmentStates.mixed_price)
+    try:
+        mixed_kg = float(message.text)
+        await state.update_data(mixed_kg=mixed_kg)
+        
+        if mixed_kg == 0:
+            await state.update_data(mixed_price=0.0)
+            await finalize_shipment(message, state)
+        else:
+            await message.answer('Введите цену за кг смешанного мусора:')
+            await state.set_state(ShipmentStates.mixed_price)
+    except ValueError:
+        await message.answer("Ошибка: Вес смешанного мусора должен быть числом. Пожалуйста, введите вес заново.")
 
 @admin.message(ShipmentStates.mixed_price)
 async def process_mixed_price(message: Message, state: FSMContext):
-    mixed_price = float(message.text)
-    await state.update_data(mixed_price=mixed_price)
-    await finalize_shipment(message, state)
+    try:
+        mixed_price = float(message.text)
+        await state.update_data(mixed_price=mixed_price)
+        await finalize_shipment(message, state)
+    except ValueError:
+        await message.answer("Ошибка: Цена за кг смешанного мусора должна быть числом. Пожалуйста, введите цену заново.")
 
 async def finalize_shipment(message: Message, state: FSMContext):
     user_data = await state.get_data()
@@ -341,6 +334,7 @@ async def finalize_shipment(message: Message, state: FSMContext):
         if not user:
             raise ValueError("Пользователь не найден.")
         
+        # Добавляем отгрузку
         await add_shipment(
             point_id=user_data['point_id'],
             user_id=user.id,  # Используем внутренний id пользователя
@@ -353,6 +347,29 @@ async def finalize_shipment(message: Message, state: FSMContext):
             mixed_kg=user_data['mixed_kg'],
             mixed_price=user_data.get('mixed_price', 0.0)
         )
+        
+        # Уведомляем пользователя о весе и стоимости
+        point = await get_point_by_id(user_data['point_id'])
+        if point:
+            user = await get_user_by_point_id(user_data['point_id'])
+            if user:
+                total_weight = (
+                    user_data['alum_kg'] +
+                    user_data['pet_kg'] +
+                    user_data['glass_kg'] +
+                    user_data['mixed_kg']
+                )
+                total_cost = (
+                    user_data['alum_kg'] * user_data.get('alum_price', 0.0) +
+                    user_data['pet_kg'] * user_data.get('pet_price', 0.0) +
+                    user_data['glass_kg'] * user_data.get('glass_price', 0.0) +
+                    user_data['mixed_kg'] * user_data.get('mixed_price', 0.0)
+                )
+                await message.bot.send_message(
+                    user.tg_id,
+                    f"Ваш мешок с мусором был обработан. Общий вес: {total_weight} кг, Общая стоимость: {total_cost} руб."
+                )
+        
         await message.answer('Данные об отгрузке успешно добавлены!', reply_markup=notification_keyboard())
     except ValueError as e:
         await message.answer(f"Ошибка: {str(e)}")

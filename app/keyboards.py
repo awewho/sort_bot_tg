@@ -10,6 +10,12 @@ def user_command():
         [InlineKeyboardButton(text="Позвать администратора", callback_data="adm_help")],
     ])
 
+
+def help_command():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Позвать администратора", callback_data="adm_help")],
+    ])
+
 def bags_count_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -52,8 +58,7 @@ def report_keyboard():
 def driver_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Сформировать маршрут", callback_data="form_route")],
-            [InlineKeyboardButton(text="Забрать мешок", callback_data="collect_bag")],
+           # [InlineKeyboardButton(text="Сформировать маршрут", callback_data="form_route")],
             [InlineKeyboardButton(text="Добавить отгрузку", callback_data="add_shipment")]
         ]
     )

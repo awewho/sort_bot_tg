@@ -9,7 +9,7 @@ from app.database.requests import (
     update_bags_count, get_user_by_id, is_point_available, add_log
 )
 from app.states import Reg, BindPoint, BagFull, Help
-from app.keyboards import confirm_keyboard, bags_count_keyboard, user_command
+from app.keyboards import confirm_keyboard, bags_count_keyboard, user_command, help_command
 
 user = Router()
 
@@ -31,7 +31,7 @@ async def process_point(message: Message, state: FSMContext):
 
     # Проверяем, доступна ли точка для привязки
     if not await is_point_available(point.id):
-        await message.answer('Эта точка уже привязана к другому пользователю. Пожалуйста, обратитесь к администратору.')
+        await message.answer('Эта точка уже привязана к другому пользователю. Пожалуйста, обратитесь к администратору.', reply_markup=help_command())
         return
 
     # Привязываем точку к пользователю
@@ -74,18 +74,26 @@ async def process_bags_count(message: Message, state: FSMContext):
     
     await state.clear()
 
-@user.message(F.text == "adm_help")
-async def call_admin(message: Message):
-    user = await get_user_by_id(message.from_user.id)
-    points = await get_user_points(message.from_user.id)
+@user.callback_query(F.data == "adm_help")
+async def call_admin(callback: CallbackQuery):
+    user = await get_user_by_id(callback.from_user.id)
+    points = await get_user_points(callback.from_user.id)
     
     if user and points:
         # Добавляем запись в лог
         await add_log(
-            client_id=message.from_user.id,
+            client_id=callback.from_user.id,
             activity="admin_call",
             question="Пользователь запросил помощь администратора"
         )
-        await message.answer('Ваш запрос на помощь отправлен администратору.')
+        
+        # Номер телефона администратора
+        admin_phone_number = "+799999999"  # Замените на реальный номер телефона
+        
+        # Отправляем сообщение с предложением позвонить
+        await callback.message.answer(
+            f"Ваш запрос на помощь отправлен администратору.\n"
+            f"Вы можете позвонить администратору по номеру: {admin_phone_number}"
+        )
     else:
-        await message.answer('У вас нет привязанных точек сбора мусора.')
+        await callback.message.answer('У вас нет привязанных точек сбора мусора.')
