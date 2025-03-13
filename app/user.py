@@ -22,26 +22,25 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @user.message(Reg.point)
 async def process_point(message: Message, state: FSMContext):
-    point_number = message.text.strip()  # Убираем лишние пробелы
-    point = await get_point_by_number(point_number)  # Получаем точку по номеру
+    point_number = message.text.strip()
+    point = await get_point_by_number(point_number)
 
     if not point:
         await message.answer('Точка с таким номером не найдена. Пожалуйста, проверьте номер и попробуйте снова.')
         return
 
-    # Проверяем, доступна ли точка для привязки
     if not await is_point_available(point.id):
         await message.answer('Эта точка уже привязана к другому пользователю. Пожалуйста, обратитесь к администратору.', reply_markup=help_command())
         return
 
-    # Привязываем точку к пользователю
     try:
+        await set_user(message.from_user.id)  # Убедимся, что пользователь существует
         await bind_point_to_user(point.id, message.from_user.id)
         await message.answer(f'Отлично, вы успешно привязаны к точке {point_number}!', reply_markup=user_command())
     except ValueError as e:
         await message.answer(f'Ошибка: {e}')
     
-    await state.clear()  # Очищаем состояние после успешной привязки
+    await state.clear()
 
 @user.callback_query(F.data == "bag_full")
 async def cmd_bag_full(callback: CallbackQuery, state: FSMContext):
