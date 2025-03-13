@@ -160,13 +160,9 @@ async def is_point_available(point_id: int):
 
 async def add_log(client_id, activity, bags_count=None, question=None, alum_kg=None, alum_price=None, alum_total=None, pet_kg=None, pet_price=None, pet_total=None, glass_kg=None, glass_price=None, glass_total=None, mixed_kg=None, mixed_price=None, mixed_total=None, total_pay=None):
     async with async_session() as session:
-        # Получаем пользователя и его точку
-        user = await session.scalar(select(User).where(User.id == client_id).options(selectinload(User.point)))
-        shop_name = user.point.shop_name if user and user.point else "Не указано"
         
         log = Log(
             client_id=client_id,
-            shop_name=shop_name,  # Сохраняем название магазина
             activity=activity,
             bags_count=bags_count,
             question=question,
@@ -238,21 +234,15 @@ async def add_shipment(point_id, user_id, alum_kg, alum_price, pet_kg, pet_price
         
 async def get_report_data():
     async with async_session() as session:
-        logs = await session.scalars(
-            select(Log)
-            .options(selectinload(Log.user).selectinload(User.point))  # Загружаем связанные данные
-        )
+        logs = await session.scalars(select(Log))
+
         report_data = []
         
         for log in logs:
-            # Получаем пользователя и его точку
-            user = await session.scalar(select(User).where(User.id == log.client_id))
-            shop_name = user.point.shop_name if user and user.point else "Не указано"
             
             report_data.append({
                 "date": log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 "client_id": log.client_id,
-                "shop_name": shop_name,  # Добавляем название магазина
                 "activity": log.activity,
                 "question": log.question,
                 "bags_count": log.bags_count,
