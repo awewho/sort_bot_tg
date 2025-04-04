@@ -21,10 +21,8 @@ class Base(AsyncAttrs, DeclarativeBase):
 class User(Base):
     __tablename__ = 'users'
     
-    id: Mapped[int] = mapped_column(primary_key=True)
-    tg_id: Mapped[int] = mapped_column(BigInteger)
-    role: Mapped[str] = mapped_column(String(20), default="user")  # Значение по умолчанию
-    point_id: Mapped[int] = mapped_column(ForeignKey('points.id'), nullable=True)  # Внешний ключ на точку
+    tg_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    point_id: Mapped[int] = mapped_column(ForeignKey('points.point_id'), nullable=True)  # Внешний ключ на точку
 
     # Отношение к точке
     point: Mapped["Point"] = relationship("Point", back_populates="users")
@@ -33,63 +31,61 @@ class User(Base):
 class Point(Base):
     __tablename__ = 'points'
     
-    id: Mapped[int] = mapped_column(primary_key=True)
-    number: Mapped[str] = mapped_column(String(5), unique=True)  # Уникальный номер точки
-    shop_name: Mapped[str] = mapped_column(String(50))
-    shop_owner_name: Mapped[str] = mapped_column(String(50))
+    point_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    point_name: Mapped[str] = mapped_column(String(50))
+    point_owner_name: Mapped[str] = mapped_column(String(50))
     phone_number: Mapped[str] = mapped_column(String(15))
     address: Mapped[str] = mapped_column(String(100))
     bags_count: Mapped[int] = mapped_column(Integer)
 
-    cluster_id: Mapped[int] = mapped_column(ForeignKey('clusters.id'))
+    zone_id: Mapped[int] = mapped_column(ForeignKey('zones.zone_id'))
 
     # Отношение к пользователям
+    zone: Mapped["Zone"] = relationship("Zone", back_populates="points")
     users: Mapped[list["User"]] = relationship("User", back_populates="point")
+    requests: Mapped[list["Request"]] = relationship("Request")
+    shipments: Mapped[list["Shipment"]] = relationship("Shipment")
 
 
-class Cluster(Base):
-    __tablename__ = 'clusters'
+class Zone(Base):
+    __tablename__ = 'zones'
     
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50))
+    zone_id: Mapped[int] = mapped_column(primary_key=True)
+    region_id: Mapped[int] = mapped_column(ForeignKey('regions.region_id'))
+
+    #Отношение к точке
+    points: Mapped[list["Point"]] = relationship("Point", back_populates="zone")
 
 
 
-
-from sqlalchemy.orm import relationship
-
-class Log(Base):
-    __tablename__ = 'logs'
+class Region(Base):
+    __tablename__ = 'regions'
     
-    id: Mapped[int] = mapped_column(primary_key=True)
-    client_id: Mapped[int] = mapped_column(Integer)  # ID клиента
-    activity: Mapped[str] = mapped_column(String(50))  # Тип активности
-    question: Mapped[str] = mapped_column(String(255), nullable=True)  # Вопрос
-    bags_count: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков
-    alum_kg: Mapped[float] = mapped_column(Float, nullable=True)  # Алюминий (кг)
-    alum_price: Mapped[float] = mapped_column(Float, nullable=True)  # Цена алюминия
-    alum_total: Mapped[float] = mapped_column(Float, nullable=True)  # Сумма алюминия
-    pet_kg: Mapped[float] = mapped_column(Float, nullable=True)  # PET (кг)
-    pet_price: Mapped[float] = mapped_column(Float, nullable=True)  # Цена PET
-    pet_total: Mapped[float] = mapped_column(Float, nullable=True)  # Сумма PET
-    glass_kg: Mapped[float] = mapped_column(Float, nullable=True)  # Стекло (кг)
-    glass_price: Mapped[float] = mapped_column(Float, nullable=True)  # Цена стекла
-    glass_total: Mapped[float] = mapped_column(Float, nullable=True)  # Сумма стекла
-    mixed_kg: Mapped[float] = mapped_column(Float, nullable=True)  # Смешанный мусор (кг)
-    mixed_price: Mapped[float] = mapped_column(Float, nullable=True)  # Цена смешанного мусора
-    mixed_total: Mapped[float] = mapped_column(Float, nullable=True)  # Сумма смешанного мусора
-    total_pay: Mapped[float] = mapped_column(Float, nullable=True)  # Итого к оплате
+    region_id: Mapped[int] = mapped_column(primary_key=True)
+    
+
+class Request(Base):
+    __tablename__ = 'requests'
+
+    request_id: Mapped[int] = mapped_column(primary_key=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)  # Время записи
-
+    point_id: Mapped[int] = mapped_column(ForeignKey('points.point_id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.tg_id')) 
+    activity: Mapped[str] = mapped_column(String(50))  # Тип активности
+    pet_bag: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков с пластиком
+    aluminum_bag: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков с алюминием
+    glass_bag: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков со стеклом
+    other: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков с другим
 
 
 
 class Shipment(Base):
     __tablename__ = 'shipments'
     
-    id: Mapped[int] = mapped_column(primary_key=True)
-    point_id: Mapped[int] = mapped_column(ForeignKey('points.id'))
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    shipment_id: Mapped[int] = mapped_column(primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    point_id: Mapped[int] = mapped_column(ForeignKey('points.point_id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.tg_id')) 
     alum_kg: Mapped[float] = mapped_column(Float, default=0.0)
     alum_price: Mapped[float] = mapped_column(Float, default=0.0)
     alum_total: Mapped[float] = mapped_column(Float, default=0.0)
@@ -99,11 +95,35 @@ class Shipment(Base):
     glass_kg: Mapped[float] = mapped_column(Float, default=0.0)
     glass_price: Mapped[float] = mapped_column(Float, default=0.0)
     glass_total: Mapped[float] = mapped_column(Float, default=0.0)
-    mixed_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    mixed_price: Mapped[float] = mapped_column(Float, default=0.0)
-    mixed_total: Mapped[float] = mapped_column(Float, default=0.0)
+    paper_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    paper_price: Mapped[float] = mapped_column(Float, default=0.0)
+    paper_total: Mapped[float] = mapped_column(Float, default=0.0)
+    metal_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    metal_price: Mapped[float] = mapped_column(Float, default=0.0)
+    metal_total: Mapped[float] = mapped_column(Float, default=0.0)
+    oil_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    oil_price: Mapped[float] = mapped_column(Float, default=0.0)
+    oil_total: Mapped[float] = mapped_column(Float, default=0.0)
+    other_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    other_price: Mapped[float] = mapped_column(Float, default=0.0)
+    other_total: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_pl_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_pl_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_pl_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_pl_glass_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_pl_glass_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_pl_glass_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_iron_cans_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_iron_cans_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_iron_cans_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
+    pet_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    pet_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
+    pet_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
+    other_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    other_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
+    other_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
     total_pay: Mapped[float] = mapped_column(Float, default=0.0)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 async def async_main():
     async with engine.begin() as conn:
