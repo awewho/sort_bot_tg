@@ -16,16 +16,36 @@ from app.keyboards import bags_count_keyboard, user_command, help_command, notif
 
 user = Router()
 
-@user.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext):
-    await set_user(message.from_user.id)
-    await message.answer('Добро пожаловать в бот! Пожалуйста, введите номер точки:')
-    await state.set_state(Reg.point)
-
 @user.message(Command("menu"))
 async def cmd_menu(message: Message):
     """Показывает меню пользователя"""
     await message.answer("Выберите действие:", reply_markup=user_command())
+
+
+@user.message(CommandStart())
+async def cmd_start(message: Message, state: FSMContext):
+    # Проверяем, есть ли у пользователя привязанная точка
+    user = await get_user_by_tg_id(message.from_user.id)
+    
+    if user and user.point_id:
+        # Если точка уже привязана, показываем основное меню
+        point = await get_point_by_id(user.point_id)
+        if point:
+            await message.answer(
+                f'Вы уже привязаны к точке {point.point_id}. Выберите действие:',
+                reply_markup=user_command()
+            )
+        else:
+            await message.answer(
+                'Ваша привязанная точка не найдена. Пожалуйста, обратитесь к администратору.',
+                reply_markup=help_command()
+            )
+    else:
+        # Если точки нет, начинаем процесс регистрации
+        await set_user(message.from_user.id)
+        await message.answer('Добро пожаловать в бот! Пожалуйста, введите номер точки:')
+        await state.set_state(Reg.point)
+
 
 @user.message(Reg.point)
 async def process_point(message: Message, state: FSMContext):
@@ -48,10 +68,9 @@ async def process_point(message: Message, state: FSMContext):
         return
         
     try:
-        await set_user(message.from_user.id)
         await bind_point_to_user(point.point_id, message.from_user.id)
         await message.answer(
-            f'Отлично, вы успешно привязаны к точке {point_id}!',
+            f'Отлично, вы успешно привязаны к точке {point.point_id}!',
             reply_markup=user_command()
         )
     except ValueError as e:
@@ -154,7 +173,7 @@ async def confirm_bags(callback: CallbackQuery, state: FSMContext):
         
         await callback.message.answer(
             "✅ Спасибо, информация получена, мы пришлем грузовик в течении 5 дней",
-            reply_markup=None
+            reply_markup=user_command()
         )
     else:
         await callback.message.answer(
@@ -202,7 +221,7 @@ async def call_admin(callback: CallbackQuery, bot: Bot):
             
             await callback.message.answer(
                 f"✅ Ваш запрос на помощь отправлен администратору.\n"
-                f"📞 Вы также можете позвонить по номеру: {admin_phone_number}"
+                f"📞 Вы также можете позвонить по номеру: {admin_phone_number}", reply_markup=user_command()
             )
         except Exception as e:
             await callback.message.answer(

@@ -76,7 +76,7 @@ async def process_zones_report(callback: CallbackQuery):
     for msg in report_messages:
         await callback.message.answer(msg)
     
-    await callback.message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
+    await callback.message.answer('Выберите действие:', reply_markup=admin_keyboard())
 
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_region")
 async def process_regions_report(callback: CallbackQuery):
@@ -114,7 +114,7 @@ async def process_regions_report(callback: CallbackQuery):
     for msg in report_messages:
         await callback.message.answer(msg)
     
-    await callback.message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
+    await callback.message.answer('Выберите действие:', reply_markup=admin_keyboard())
 
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_region_detail")
 async def ask_region_id(callback: CallbackQuery, state: FSMContext):
@@ -183,7 +183,7 @@ async def generate_region_detail_report(message: Message, state: FSMContext):
     for msg in report_messages:
         await message.answer(msg)
     
-    await message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
+    await message.answer('Выберите действие:', reply_markup=admin_keyboard())
     await state.clear()
 
 @admin.callback_query(Admin(), F.data == "generate_log_report")
@@ -345,7 +345,7 @@ async def generate_log_report(callback: CallbackQuery):
     
     filename = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     wb.save(filename)
-    await callback.message.answer_document(FSInputFile(filename))
+    await callback.message.answer_document(FSInputFile(filename), reply_markup=admin_keyboard())
     os.remove(filename)
     
 
@@ -994,7 +994,7 @@ async def confirm_shipment(callback: CallbackQuery, state: FSMContext):
                 )
         
         await callback.message.edit_text(
-            '✅ Данные об отгрузке успешно добавлены! Количество мешков обнулено.'
+            '✅ Данные об отгрузке успешно добавлены! Количество мешков обнулено.', reply_markup=driver_keyboard()
         )
     except ValueError as e:
         await callback.message.edit_text(f"❌ Ошибка: {str(e)}")
