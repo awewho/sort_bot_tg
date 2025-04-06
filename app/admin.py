@@ -25,7 +25,7 @@ from app.keyboards import (
     get_main_materials_keyboard, get_mix_materials_keyboard,
     get_secondary_materials_keyboard)
 
-ADMIN_IDS = [753755508, 1582399282]  # ID администраторов
+ADMIN_IDS = [753755508, 1582399282]  # ID администраторов (оставляем без изменений)
 
 admin = Router()
 
@@ -37,25 +37,26 @@ class Admin(Filter):
 async def admin_start(message: Message):
     """Главное меню админ-панели"""
     await message.answer(
-        "Добро пожаловать в админ-панель. Выберите действие:",
+        "ยินดีต้อนรับสู่แผงควบคุมผู้ดูแล กรุณาเลือกการดำเนินการ:",  # "Добро пожаловать в админ-панель. Выберите действие:"
         reply_markup=admin_keyboard()
     )
 
 @admin.callback_query(Admin(), F.data == 'report')
 async def cmd_report(callback: CallbackQuery, state: FSMContext):
     """Меню отчетов"""
-    await callback.message.answer('Выберите тип отчета:', reply_markup=report_keyboard())
+    await callback.message.answer('กรุณาเลือกรูปแบบรายงาน:', reply_markup=report_keyboard())  # "Выберите тип отчета:"
     await state.set_state(Reports.report_type)
+
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_zone")
 async def process_zones_report(callback: CallbackQuery):
     """Отчет по зонам"""
     zones = await get_all_zones()
     
     if not zones:
-        await callback.message.answer('Нет данных по зонам.')
+        await callback.message.answer('ไม่มีข้อมูลโซน')  # "Нет данных по зонам."
         return
     
-    report_messages = ["Отчет по зонам:\n\n"]
+    report_messages = ["รายงานตามโซน:\n\n"]  # "Отчет по зонам:"
     for zone in zones:
         points = await get_points_by_zone(zone.zone_id)
         total_bags = sum(p.bags_count for p in points) if points else 0
@@ -76,7 +77,7 @@ async def process_zones_report(callback: CallbackQuery):
     for msg in report_messages:
         await callback.message.answer(msg)
     
-    await callback.message.answer('Выберите действие:', reply_markup=admin_keyboard())
+    await callback.message.answer('กรุณาเลือกการดำเนินการ:', reply_markup=admin_keyboard())  # "Выберите действие:"
 
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_region")
 async def process_regions_report(callback: CallbackQuery):
@@ -84,10 +85,10 @@ async def process_regions_report(callback: CallbackQuery):
     regions = await get_all_regions()
     
     if not regions:
-        await callback.message.answer('Нет данных по регионам.')
+        await callback.message.answer('ไม่มีข้อมูลภูมิภาค')  # "Нет данных по регионам."
         return
     
-    report_messages = ["Отчет по регионам:\n\n"]
+    report_messages = ["รายงานตามภูมิภาค:\n\n"]  # "Отчет по регионам:"
     for region in regions:
         zones = await get_zones_by_region(region.region_id)
         zone_count = len(zones)
@@ -100,10 +101,10 @@ async def process_regions_report(callback: CallbackQuery):
             total_bags += sum(p.bags_count for p in points)
         
         region_info = (
-            f"Регион ID: {region.region_id}\n"
-            f"Зон: {zone_count}\n"
-            f"Точек: {point_count}\n"
-            f"Всего мешков: {total_bags}\n\n"
+            f"ภูมิภาค ID: {region.region_id}\n"  # "Регион ID:"
+            f"จำนวนโซน: {zone_count}\n"  # "Зон:"
+            f"จำนวนจุด: {point_count}\n"  # "Точек:"
+            f"จำนวนถุงทั้งหมด: {total_bags}\n\n"  # "Всего мешков:"
         )
         
         if len(report_messages[-1]) + len(region_info) > 4000:
@@ -114,12 +115,12 @@ async def process_regions_report(callback: CallbackQuery):
     for msg in report_messages:
         await callback.message.answer(msg)
     
-    await callback.message.answer('Выберите действие:', reply_markup=admin_keyboard())
+    await callback.message.answer('กรุณาเลือกการดำเนินการ:', reply_markup=admin_keyboard())  # "Выберите действие:"
 
 @admin.callback_query(Admin(), Reports.report_type, F.data == "report_region_detail")
 async def ask_region_id(callback: CallbackQuery, state: FSMContext):
     """Запрос ID региона для детального отчета"""
-    await callback.message.answer("Введите ID региона для отчета:")
+    await callback.message.answer("กรุณากรอก ID ภูมิภาคสำหรับรายงาน:")  # "Введите ID региона для отчета:"
     await state.set_state(Reports.waiting_region_id)
 
 @admin.message(Admin(), Reports.waiting_region_id)
@@ -128,20 +129,20 @@ async def generate_region_detail_report(message: Message, state: FSMContext):
     try:
         region_id = int(message.text.strip())
     except ValueError:
-        await message.answer("Пожалуйста, введите числовой ID региона.")
+        await message.answer("กรุณากรอก ID ภูมิภาคเป็นตัวเลข")  # "Пожалуйста, введите числовой ID региона."
         return
     
     # Получаем данные по региону
     region = await get_region_by_id(region_id)
     if not region:
-        await message.answer(f"Регион с ID {region_id} не найден.")
+        await message.answer(f"ไม่พบภูมิภาค ID {region_id}")  # f"Регион с ID {region_id} не найден."
         await state.clear()
         return
     
     # Получаем все зоны в регионе
     zones = await get_zones_by_region(region_id)
     if not zones:
-        await message.answer(f"В регионе {region_id} нет зон.")
+        await message.answer(f"ไม่มีโซนในภูมิภาค {region_id}")  # f"В регионе {region_id} нет зон."
         await state.clear()
         return
     
@@ -158,22 +159,22 @@ async def generate_region_detail_report(message: Message, state: FSMContext):
         total_points += zone_points
         total_bags += zone_bags
         
-        if zone_points > 0:  # Добавляем только зоны с точками
+        if zone_points > 0:
             zones_data.append((zone.zone_id, zone_points, zone_bags))
     
     # Формируем сообщения с учетом лимита
     header = (
-        f"📊 Отчет по региону {region_id}:\n"
-        f"Всего точек: {total_points}\n"
-        f"Всего мешков готово: {total_bags}\n\n"
-        f"Детали по зонам:\n"
+        f"📊 รายงานภูมิภาค {region_id}:\n"  # f"📊 Отчет по региону {region_id}:"
+        f"จำนวนจุดทั้งหมด: {total_points}\n"  # f"Всего точек: {total_points}"
+        f"จำนวนถุงทั้งหมด: {total_bags}\n\n"  # f"Всего мешков готово: {total_bags}"
+        f"รายละเอียดโซน:\n"  # f"Детали по зонам:"
     )
     
     report_messages = [header]
     
     # Добавляем информацию по зонам
     for zone_id, zone_points, zone_bags in zones_data:
-        zone_info = f"▪️ Зона {zone_id} - {zone_points} точек ({zone_bags} мешков)\n"
+        zone_info = f"▪️ โซน {zone_id} - {zone_points} จุด ({zone_bags} ถุง)\n"  # f"▪️ Зона {zone_id} - {zone_points} точек ({zone_bags} мешков)"
         
         if len(report_messages[-1]) + len(zone_info) > 4000:
             report_messages.append(zone_info)
@@ -183,7 +184,7 @@ async def generate_region_detail_report(message: Message, state: FSMContext):
     for msg in report_messages:
         await message.answer(msg)
     
-    await message.answer('Выберите действие:', reply_markup=admin_keyboard())
+    await message.answer('กรุณาเลือกการดำเนินการ:', reply_markup=admin_keyboard())  # "Выберите действие:"
     await state.clear()
 
 @admin.callback_query(Admin(), F.data == "generate_log_report")
@@ -201,13 +202,19 @@ async def generate_log_report(callback: CallbackQuery):
     if "Sheet" in wb.sheetnames:
         del wb["Sheet"]
     
-    # 1. Лист с заявками (обновлен с учетом user_id)
+    # 1. Лист с заявками (тайский + английский)
     if requests:
-        ws_requests = wb.create_sheet("Заявки")
+        ws_requests = wb.create_sheet("คำขอ/Requests")
         headers_requests = [
-            "Дата", "Точка ID", "Пользователь ID", "Тип активности",
-            "PET мешки", "Алюминий мешки", "Стекло мешки", "Другие мешки",
-            "Общее количество"
+            "วันที่/Date", 
+            "จุด ID/Point ID", 
+            "ผู้ใช้ ID/User ID", 
+            "ประเภทกิจกรรม/Activity Type",
+            "ถุง PET/PET Bags", 
+            "ถุงอลูมิเนียม/Aluminum Bags", 
+            "ถุงแก้ว/Glass Bags", 
+            "ถุงอื่นๆ/Other Bags",
+            "จำนวนทั้งหมด/Total Quantity"
         ]
         ws_requests.append(headers_requests)
         
@@ -215,7 +222,7 @@ async def generate_log_report(callback: CallbackQuery):
             ws_requests.append([
                 req.timestamp.strftime('%Y-%m-%d %H:%M'),
                 req.point_id,
-                req.user_id,  # Теперь используем реальный user_id
+                req.user_id,
                 req.activity,
                 req.pet_bag or 0,
                 req.aluminum_bag or 0,
@@ -225,24 +232,34 @@ async def generate_log_report(callback: CallbackQuery):
                 (req.glass_bag or 0) + (req.other or 0)
             ])
     
-
-    # 2. Лист с отгрузками (оставляем без изменений)
+    # 2. Лист с отгрузками (тайский + английский)
     if shipments:
-        ws_shipments = wb.create_sheet("Отгрузки")
+        ws_shipments = wb.create_sheet("การจัดส่ง/Shipments")
         headers_shipments = [
-            "Дата", "Точка ID", "Водитель ID", "Общая оплата",
-            "PET кг", "Цена PET", "Сумма PET",
-            "Алюминий кг", "Цена алюминия", "Сумма алюминия",
-            "Стекло кг", "Цена стекла", "Сумма стекла",
-            "Бумага кг", "Цена бумаги", "Сумма бумаги",
-            "Металл кг", "Цена металла", "Сумма металла",
-            "Масло кг", "Цена масла", "Сумма масла",
-            "Другое кг", "Цена другого", "Сумма другого",
-            "Алюм+пластик кг", "Цена смеси", "Сумма смеси",
-            "Алюм+пластик+стекло кг", "Цена смеси", "Сумма смеси",
-            "Алюм+жесть кг", "Цена смеси", "Сумма смеси",
-            "PET смесь кг", "Цена смеси", "Сумма смеси",
-            "Другая смесь кг", "Цена смеси", "Сумма смеси"
+            "วันที่/Date", 
+            "จุด ID/Point ID", 
+            "คนขับ ID/Driver ID", 
+            "ยอดรวม/Total Payment",
+            # PET
+            "PET กก./PET kg", "ราคา PET/PET Price", "รวม PET/PET Total",
+            # Алюминий
+            "อลูมิเนียม กก./Aluminum kg", "ราคาอลูมิเนียม/Aluminum Price", "รวมอลูมิเนียม/Aluminum Total",
+            # Стекло
+            "แก้ว กก./Glass kg", "ราคาแก้ว/Glass Price", "รวมแก้ว/Glass Total",
+            # Бумага
+            "กระดาษ กก./Paper kg", "ราคากระดาษ/Paper Price", "รวมกระดาษ/Paper Total",
+            # Металл
+            "โลหะ กก./Metal kg", "ราคาโลหะ/Metal Price", "รวมโลหะ/Metal Total",
+            # Масло
+            "น้ำมัน กก./Oil kg", "ราคาน้ำมัน/Oil Price", "รวมน้ำมัน/Oil Total",
+            # Другое
+            "อื่นๆ กก./Other kg", "ราคาอื่นๆ/Other Price", "รวมอื่นๆ/Other Total",
+            # Смеси
+            "อลูมิเนียม+พลาสติก กก./Alum+Plastic kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "อลูมิเนียม+พลาสติก+แก้ว กก./Alum+Plastic+Glass kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "อลูมิเนียม+เหล็ก กก./Alum+Iron kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "PET ผสม กก./PET Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "อื่นๆ ผสม กก./Other Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total"
         ]
         ws_shipments.append(headers_shipments)
         
@@ -266,54 +283,50 @@ async def generate_log_report(callback: CallbackQuery):
                 ship.other_mix_kg, ship.other_mix_price, ship.other_mix_total
             ])
     
-    # 3. Общий лист с ПОЛНЫМИ данными по отгрузкам
+    # 3. Общий лист (тайский + английский)
     if combined:
-        ws_combined = wb.create_sheet("Все данные")
+        ws_combined = wb.create_sheet("ข้อมูลทั้งหมด/All Data")
         headers_combined = [
-            "Тип записи", "Дата", "ID точки", "ID пользователя",
+            "ประเภท/Type", 
+            "วันที่/Date", 
+            "จุด ID/Point ID", 
+            "ผู้ใช้ ID/User ID",
             # Основные материалы
-            "PET (мешки/кг)", "Цена PET", "Сумма PET",
-            "Алюминий (мешки/кг)", "Цена алюминия", "Сумма алюминия",
-            "Стекло (мешки/кг)", "Цена стекла", "Сумма стекла",
+            "PET (ถุง/กก.)/PET (Bags/kg)", "ราคา PET/PET Price", "รวม PET/PET Total",
+            "อลูมิเนียม (ถุง/กก.)/Aluminum (Bags/kg)", "ราคาอลูมิเนียม/Aluminum Price", "รวมอลูมิเนียม/Aluminum Total",
+            "แก้ว (ถุง/กก.)/Glass (Bags/kg)", "ราคาแก้ว/Glass Price", "รวมแก้ว/Glass Total",
             # Дополнительные материалы
-            "Бумага кг", "Цена бумаги", "Сумма бумаги",
-            "Металл кг", "Цена металла", "Сумма металла",
-            "Масло кг", "Цена масла", "Сумма масла",
-            "Другое кг", "Цена другого", "Сумма другого",
+            "กระดาษ กก./Paper kg", "ราคากระดาษ/Paper Price", "รวมกระดาษ/Paper Total",
+            "โลหะ กก./Metal kg", "ราคาโลหะ/Metal Price", "รวมโลหะ/Metal Total",
+            "น้ำมัน กก./Oil kg", "ราคาน้ำมัน/Oil Price", "รวมน้ำมัน/Oil Total",
+            "อื่นๆ กก./Other kg", "ราคาอื่นๆ/Other Price", "รวมอื่นๆ/Other Total",
             # Смеси
-            "Алюм+пластик кг", "Цена смеси", "Сумма смеси",
-            "Алюм+пласт+стекло кг", "Цена смеси", "Сумма смеси",
-            "Алюм+жесть кг", "Цена смеси", "Сумма смеси",
-            "PET смесь кг", "Цена смеси", "Сумма смеси",
-            "Другая смесь кг", "Цена смеси", "Сумма смеси",
+            "อลูมิเนียม+พลาสติก กก./Alum+Plastic kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "อลูมิเนียม+พลาสติก+แก้ว กก./Alum+Plastic+Glass kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "อลูมิเนียม+เหล็ก กก./Alum+Iron kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "PET ผสม กก./PET Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "อื่นๆ ผสม กก./Other Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
             # Итоги
-            "Общая сумма", "Тип активности (для заявок)"
+            "ยอดรวม/Total Amount", 
+            "ประเภทกิจกรรม (สำหรับคำขอ)/Activity Type (for requests)"
         ]
         ws_combined.append(headers_combined)
         
         for item in combined:
             if item["type"] == "request":
                 row = [
-                    "Заявка",
+                    "คำขอ/Request",
                     item["timestamp"].strftime('%Y-%m-%d %H:%M'),
                     item["point_id"],
-                    item["user_id"],  # Теперь используем реальный user_id
+                    item["user_id"],
                     item["total"],
                     item["activity"],
-                    "",  # Для user_id в заявках
-                    # PET
-                    item["pet"], "", "",
-                    # Алюминий
-                    item["aluminum"], "", "",
-                    # Стекло
-                    item["glass"], "", "",
-                    # Остальные поля для заявок пустые
-                    *([""] * 33),  # 11 полей × 3 колонки
-                    
+                    "",
+                    *([""] * 33)
                 ]
             else:
                 row = [
-                    "Отгрузка",
+                    "การจัดส่ง/Shipment",
                     item["timestamp"].strftime('%Y-%m-%d %H:%M'),
                     item["point_id"],
                     item["user_id"],
@@ -339,7 +352,7 @@ async def generate_log_report(callback: CallbackQuery):
                     item["other_mix_kg"], item["other_mix_price"], item["other_mix_total"],
                     # Итоги
                     item["total_pay"],
-                    ""  # Для activity в отгрузках
+                    ""
                 ]
             ws_combined.append(row)
     
@@ -347,18 +360,15 @@ async def generate_log_report(callback: CallbackQuery):
     wb.save(filename)
     await callback.message.answer_document(FSInputFile(filename), reply_markup=admin_keyboard())
     os.remove(filename)
-    
 
 # Основное меню водителя
 @admin.message(Command('driver'))
 async def cmd_driver(message: Message):
-    await message.answer("Выберите действие:", reply_markup=driver_keyboard())
-
-
+    await message.answer("กรุณาเลือกการดำเนินการ:", reply_markup=driver_keyboard())  # "Выберите действие:"
 
 @admin.callback_query(F.data == "add_shipment")
 async def process_add_shipment(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer('Введите ID точки:')
+    await callback.message.answer('กรุณากรอก ID จุด:')  # "Введите ID точки:"
     await state.set_state(ShipmentStates.point_id)
     await callback.answer()
 
@@ -367,35 +377,35 @@ async def process_point_id(message: Message, state: FSMContext):
     try:
         point_id = int(message.text)
         await state.update_data(point_id=point_id)
-        await message.answer('Выберите категорию:', reply_markup=get_category_keyboard())
+        await message.answer('กรุณาเลือกประเภท:', reply_markup=get_category_keyboard())  # "Выберите категорию:"
     except ValueError:
-        await message.answer("Ошибка: ID точки должен быть целым числом. Пожалуйста, введите ID точки заново.")
+        await message.answer("ข้อผิดพลาด: ID จุดต้องเป็นตัวเลขเต็ม กรุณากรอกใหม่")  # "Ошибка: ID точки должен быть целым числом. Пожалуйста, введите ID точки заново."
 
 # Обработчики выбора категорий
 @admin.callback_query(F.data == "category_main")
 async def select_main_materials(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("Выберите материал:", reply_markup=get_main_materials_keyboard())
+    await callback.message.edit_text("กรุณาเลือกวัสดุ:", reply_markup=get_main_materials_keyboard())  # "Выберите материал:"
     await callback.answer()
 
 @admin.callback_query(F.data == "category_secondary")
 async def select_secondary_materials(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("Выберите материал:", reply_markup=get_secondary_materials_keyboard())
+    await callback.message.edit_text("กรุณาเลือกวัสดุ:", reply_markup=get_secondary_materials_keyboard())  # "Выберите материал:"
     await callback.answer()
 
 @admin.callback_query(F.data == "category_mix")
 async def select_mix_materials(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("Выберите смешанный материал:", reply_markup=get_mix_materials_keyboard())
+    await callback.message.edit_text("กรุณาเลือกวัสดุผสม:", reply_markup=get_mix_materials_keyboard())  # "Выберите смешанный материал:"
     await callback.answer()
 
 @admin.callback_query(F.data == "back_to_categories")
 async def back_to_categories(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text("Выберите категорию:", reply_markup=get_category_keyboard())
+    await callback.message.edit_text("กรุณาเลือกประเภท:", reply_markup=get_category_keyboard())  # "Выберите категорию:"
     await callback.answer()
 
 # Обработчики для основных материалов
 @admin.callback_query(F.data == "material_alum")
 async def process_alum_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес алюминия (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักอลูมิเนียม (กก.):")  # "Введите вес алюминия (кг):"
     await state.set_state(ShipmentStates.alum_kg)
     await callback.answer()
 
@@ -409,12 +419,12 @@ async def process_alum_kg(message: Message, state: FSMContext):
         
         if alum_kg == 0:
             await state.update_data(alum_price=0.0)
-            await message.answer("Вес алюминия равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนักอลูมิเนียมเป็น 0", reply_markup=get_category_keyboard())  # "Вес алюминия равен 0."
         else:
-            await message.answer("Введите цену за кг алюминия:")
+            await message.answer("กรุณากรอกราคาต่อกก. อลูมิเนียม:")  # "Введите цену за кг алюминия:"
             await state.set_state(ShipmentStates.alum_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.alum_price)
 async def process_alum_price(message: Message, state: FSMContext):
@@ -423,14 +433,14 @@ async def process_alum_price(message: Message, state: FSMContext):
         if alum_price < 0:
             raise ValueError
         await state.update_data(alum_price=alum_price)
-        await message.answer("Данные по алюминию сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูลอลูมิเนียมเรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по алюминию сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
 # Обработчики для PET (пластика)
 @admin.callback_query(F.data == "material_pet")
 async def process_pet_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес PET (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนัก PET (กก.):")  # "Введите вес PET (кг):"
     await state.set_state(ShipmentStates.pet_kg)
     await callback.answer()
 
@@ -444,12 +454,12 @@ async def process_pet_kg(message: Message, state: FSMContext):
         
         if pet_kg == 0:
             await state.update_data(pet_price=0.0)
-            await message.answer("Вес PET равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนัก PET เป็น 0", reply_markup=get_category_keyboard())  # "Вес PET равен 0."
         else:
-            await message.answer("Введите цену за кг PET:")
+            await message.answer("กรุณากรอกราคาต่อกก. PET:")  # "Введите цену за кг PET:"
             await state.set_state(ShipmentStates.pet_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.pet_price)
 async def process_pet_price(message: Message, state: FSMContext):
@@ -458,14 +468,14 @@ async def process_pet_price(message: Message, state: FSMContext):
         if pet_price < 0:
             raise ValueError
         await state.update_data(pet_price=pet_price)
-        await message.answer("Данные по PET сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูล PET เรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по PET сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
 # Обработчики для стекла
 @admin.callback_query(F.data == "material_glass")
 async def process_glass_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес стекла (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักแก้ว (กก.):")  # "Введите вес стекла (кг):"
     await state.set_state(ShipmentStates.glass_kg)
     await callback.answer()
 
@@ -479,12 +489,12 @@ async def process_glass_kg(message: Message, state: FSMContext):
         
         if glass_kg == 0:
             await state.update_data(glass_price=0.0)
-            await message.answer("Вес стекла равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนักแก้วเป็น 0", reply_markup=get_category_keyboard())  # "Вес стекла равен 0."
         else:
-            await message.answer("Введите цену за кг стекла:")
+            await message.answer("กรุณากรอกราคาต่อกก. แก้ว:")  # "Введите цену за кг стекла:"
             await state.set_state(ShipmentStates.glass_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.glass_price)
 async def process_glass_price(message: Message, state: FSMContext):
@@ -493,14 +503,14 @@ async def process_glass_price(message: Message, state: FSMContext):
         if glass_price < 0:
             raise ValueError
         await state.update_data(glass_price=glass_price)
-        await message.answer("Данные по стеклу сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูลแก้วเรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по стеклу сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
 # Обработчики для бумаги
 @admin.callback_query(F.data == "material_paper")
 async def process_paper_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес бумаги (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักกระดาษ (กก.):")  # "Введите вес бумаги (кг):"
     await state.set_state(ShipmentStates.paper_kg)
     await callback.answer()
 
@@ -514,12 +524,12 @@ async def process_paper_kg(message: Message, state: FSMContext):
         
         if paper_kg == 0:
             await state.update_data(paper_price=0.0)
-            await message.answer("Вес бумаги равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนักกระดาษเป็น 0", reply_markup=get_category_keyboard())  # "Вес бумаги равен 0."
         else:
-            await message.answer("Введите цену за кг бумаги:")
+            await message.answer("กรุณากรอกราคาต่อกก. กระดาษ:")  # "Введите цену за кг бумаги:"
             await state.set_state(ShipmentStates.paper_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.paper_price)
 async def process_paper_price(message: Message, state: FSMContext):
@@ -528,14 +538,14 @@ async def process_paper_price(message: Message, state: FSMContext):
         if paper_price < 0:
             raise ValueError
         await state.update_data(paper_price=paper_price)
-        await message.answer("Данные по бумаге сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูลกระดาษเรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по бумаге сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
 # Обработчики для металла
 @admin.callback_query(F.data == "material_metal")
 async def process_metal_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес металла (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักโลหะ (กก.):")  # "Введите вес металла (кг):"
     await state.set_state(ShipmentStates.metal_kg)
     await callback.answer()
 
@@ -549,12 +559,12 @@ async def process_metal_kg(message: Message, state: FSMContext):
         
         if metal_kg == 0:
             await state.update_data(metal_price=0.0)
-            await message.answer("Вес металла равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนักโลหะเป็น 0", reply_markup=get_category_keyboard())  # "Вес металла равен 0."
         else:
-            await message.answer("Введите цену за кг металла:")
+            await message.answer("กรุณากรอกราคาต่อกก. โลหะ:")  # "Введите цену за кг металла:"
             await state.set_state(ShipmentStates.metal_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.metal_price)
 async def process_metal_price(message: Message, state: FSMContext):
@@ -563,14 +573,14 @@ async def process_metal_price(message: Message, state: FSMContext):
         if metal_price < 0:
             raise ValueError
         await state.update_data(metal_price=metal_price)
-        await message.answer("Данные по металлу сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูลโลหะเรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по металлу сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
 # Обработчики для масла
 @admin.callback_query(F.data == "material_oil")
 async def process_oil_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес масла (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักน้ำมัน (กก.):")  # "Введите вес масла (кг):"
     await state.set_state(ShipmentStates.oil_kg)
     await callback.answer()
 
@@ -584,12 +594,12 @@ async def process_oil_kg(message: Message, state: FSMContext):
         
         if oil_kg == 0:
             await state.update_data(oil_price=0.0)
-            await message.answer("Вес масла равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนักน้ำมันเป็น 0", reply_markup=get_category_keyboard())  # "Вес масла равен 0."
         else:
-            await message.answer("Введите цену за кг масла:")
+            await message.answer("กรุณากรอกราคาต่อกก. น้ำมัน:")  # "Введите цену за кг масла:"
             await state.set_state(ShipmentStates.oil_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.oil_price)
 async def process_oil_price(message: Message, state: FSMContext):
@@ -598,14 +608,14 @@ async def process_oil_price(message: Message, state: FSMContext):
         if oil_price < 0:
             raise ValueError
         await state.update_data(oil_price=oil_price)
-        await message.answer("Данные по маслу сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูลน้ำมันเรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по маслу сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
 # Обработчики для прочих материалов
 @admin.callback_query(F.data == "material_other")
 async def process_other_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес прочих материалов (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักวัสดุอื่นๆ (กก.):")  # "Введите вес прочих материалов (кг):"
     await state.set_state(ShipmentStates.other_kg)
     await callback.answer()
 
@@ -619,12 +629,12 @@ async def process_other_kg(message: Message, state: FSMContext):
         
         if other_kg == 0:
             await state.update_data(other_price=0.0)
-            await message.answer("Вес прочих материалов равен 0.", reply_markup=get_category_keyboard())
+            await message.answer("น้ำหนักวัสดุอื่นๆ เป็น 0", reply_markup=get_category_keyboard())  # "Вес прочих материалов равен 0."
         else:
-            await message.answer("Введите цену за кг прочих материалов:")
+            await message.answer("กรุณากรอกราคาต่อกก. วัสดุอื่นๆ:")  # "Введите цену за кг прочих материалов:"
             await state.set_state(ShipmentStates.other_price)
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 @admin.message(ShipmentStates.other_price)
 async def process_other_price(message: Message, state: FSMContext):
@@ -633,24 +643,24 @@ async def process_other_price(message: Message, state: FSMContext):
         if other_price < 0:
             raise ValueError
         await state.update_data(other_price=other_price)
-        await message.answer("Данные по прочим материалам сохранены.", reply_markup=get_category_keyboard())
+        await message.answer("บันทึกข้อมูลวัสดุอื่นๆ เรียบร้อย", reply_markup=get_category_keyboard())  # "Данные по прочим материалам сохранены."
     except ValueError:
-        await message.answer("Ошибка: Цена должна быть положительным числом. Введите цену заново:")
+        await message.answer("ข้อผิดพลาด: ราคาต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Цена должна быть положительным числом. Введите цену заново:"
 
         
-# Фиксированные цены для смешанных материалов
+# Фиксированные цены для смешанных материалов (оставляем без изменений)
 MIX_PRICES = {
-    'alum_pl_mix': 8.0,        # алюм-пластик
-    'alum_pl_glass_mix': 2.0,  # алюм-пластик-стекло
-    'alum_iron_cans_mix': 3.0, # алюм-железные банки
-    'pet_mix': 5.0,            # смешанный пластик
-    'other_mix': 1.0           # прочий микс
+    'alum_pl_mix': 8.0,        # อลูมิเนียม+พลาสติก
+    'alum_pl_glass_mix': 2.0,  # อลูมิเนียม+พลาสติก+แก้ว
+    'alum_iron_cans_mix': 3.0, # อลูมิเนียม+กระป๋องเหล็ก
+    'pet_mix': 5.0,            # พลาสติกผสม
+    'other_mix': 1.0           # อื่นๆ ผสม
 }
 
 # Обработчики для алюм-пластика
 @admin.callback_query(F.data == "material_alum_pl_mix")
 async def process_alum_pl_mix_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес алюм-пластика (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักอลูมิเนียม+พลาสติก (กก.):")  # "Введите вес алюм-пластика (кг):"
     await state.set_state(ShipmentStates.alum_pl_mix_kg)
     await callback.answer()
 
@@ -669,18 +679,18 @@ async def process_alum_pl_mix_kg(message: Message, state: FSMContext):
         )
         
         await message.answer(
-            f"Данные по алюм-пластику сохранены.\n"
-            f"Вес: {alum_pl_mix_kg} кг\n"
-            f"Цена: {alum_pl_mix_price} руб/кг (фиксированная)",
+            f"บันทึกข้อมูลอลูมิเนียม+พลาสติกเรียบร้อย\n"  # "Данные по алюм-пластику сохранены."
+            f"น้ำหนัก: {alum_pl_mix_kg} กก.\n"  # "Вес:"
+            f"ราคา: {alum_pl_mix_price} บาท/กก. (ค่าตายตัว)",  # "Цена: руб/кг (фиксированная)"
             reply_markup=get_category_keyboard()
         )
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 # Обработчики для алюм-пластик-стекло
 @admin.callback_query(F.data == "material_alum_pl_glass_mix")
 async def process_alum_pl_glass_mix_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес алюм-пластик-стекло (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักอลูมิเนียม+พลาสติก+แก้ว (กก.):")  # "Введите вес алюм-пластик-стекло (кг):"
     await state.set_state(ShipmentStates.alum_pl_glass_mix_kg)
     await callback.answer()
 
@@ -699,18 +709,17 @@ async def process_alum_pl_glass_mix_kg(message: Message, state: FSMContext):
         )
         
         await message.answer(
-            f"Данные по алюм-пластик-стекло сохранены.\n"
-            f"Вес: {alum_pl_glass_mix_kg} кг\n"
-            f"Цена: {alum_pl_glass_mix_price} руб/кг (фиксированная)",
+            f"บันทึกข้อมูลอลูมิเนียม+พลาสติก+แก้วเรียบร้อย\n"
+            f"น้ำหนัก: {alum_pl_glass_mix_kg} กก.\n"
+            f"ราคา: {alum_pl_glass_mix_price} บาท/กก. (ค่าตายตัว)",
             reply_markup=get_category_keyboard()
         )
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
-
-# Обработчики для алюм-железные банки
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")
+ # Обработчики для алюм-железные банки
 @admin.callback_query(F.data == "material_alum_iron_cans_mix")
 async def process_alum_iron_cans_mix_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес алюм-железные банки (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักอลูมิเนียม+กระป๋องเหล็ก (กก.):")  # "Введите вес алюм-железные банки (кг):"
     await state.set_state(ShipmentStates.alum_iron_cans_mix_kg)
     await callback.answer()
 
@@ -729,18 +738,18 @@ async def process_alum_iron_cans_mix_kg(message: Message, state: FSMContext):
         )
         
         await message.answer(
-            f"Данные по алюм-железные банки сохранены.\n"
-            f"Вес: {alum_iron_cans_mix_kg} кг\n"
-            f"Цена: {alum_iron_cans_mix_price} руб/кг (фиксированная)",
+            f"บันทึกข้อมูลอลูมิเนียม+กระป๋องเหล็กเรียบร้อย\n"  # "Данные по алюм-железные банки сохранены."
+            f"น้ำหนัก: {alum_iron_cans_mix_kg} กก.\n"  # "Вес:"
+            f"ราคา: {alum_iron_cans_mix_price} บาท/กก. (ค่าตายตัว)",  # "Цена: руб/кг (фиксированная)"
             reply_markup=get_category_keyboard()
         )
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 # Обработчики для смешанного пластика
 @admin.callback_query(F.data == "material_pet_mix")
 async def process_pet_mix_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес смешанного пластика (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักพลาสติกผสม (กก.):")  # "Введите вес смешанного пластика (кг):"
     await state.set_state(ShipmentStates.pet_mix_kg)
     await callback.answer()
 
@@ -759,18 +768,18 @@ async def process_pet_mix_kg(message: Message, state: FSMContext):
         )
         
         await message.answer(
-            f"Данные по смешанному пластику сохранены.\n"
-            f"Вес: {pet_mix_kg} кг\n"
-            f"Цена: {pet_mix_price} руб/кг (фиксированная)",
+            f"บันทึกข้อมูลพลาสติกผสมเรียบร้อย\n"  # "Данные по смешанному пластику сохранены."
+            f"น้ำหนัก: {pet_mix_kg} กก.\n"  # "Вес:"
+            f"ราคา: {pet_mix_price} บาท/กก. (ค่าตายตัว)",  # "Цена: руб/кг (фиксированная)"
             reply_markup=get_category_keyboard()
         )
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 # Обработчики для прочего микса
 @admin.callback_query(F.data == "material_other_mix")
 async def process_other_mix_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Введите вес прочего микса (кг):")
+    await callback.message.answer("กรุณากรอกน้ำหนักอื่นๆ ผสม (กก.):")  # "Введите вес прочего микса (кг):"
     await state.set_state(ShipmentStates.other_mix_kg)
     await callback.answer()
 
@@ -789,13 +798,13 @@ async def process_other_mix_kg(message: Message, state: FSMContext):
         )
         
         await message.answer(
-            f"Данные по прочему миксу сохранены.\n"
-            f"Вес: {other_mix_kg} кг\n"
-            f"Цена: {other_mix_price} руб/кг (фиксированная)",
+            f"บันทึกข้อมูลอื่นๆ ผสมเรียบร้อย\n"  # "Данные по прочему миксу сохранены."
+            f"น้ำหนัก: {other_mix_kg} กก.\n"  # "Вес:"
+            f"ราคา: {other_mix_price} บาท/กก. (ค่าตายตัว)",  # "Цена: руб/кг (фиксированная)"
             reply_markup=get_category_keyboard()
         )
     except ValueError:
-        await message.answer("Ошибка: Вес должен быть положительным числом. Введите вес заново:")
+        await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")  # "Ошибка: Вес должен быть положительным числом. Введите вес заново:"
 
 # Обработчик завершения ввода
 @admin.callback_query(F.data == "finish_shipment")
@@ -803,86 +812,86 @@ async def finish_shipment(callback: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     
     # Формируем сводку по всем введенным данным
-    summary = "📋 Сводка по отгрузке:\n\n"
+    summary = "📋 สรุปการจัดส่ง:\n\n"  # "📋 Сводка по отгрузке:"
     total_weight = 0
     total_cost = 0
     
     # Основные материалы
     if 'alum_kg' in user_data:
         alum_cost = user_data.get('alum_kg', 0) * user_data.get('alum_price', 0)
-        summary += f"🔹 Алюминий: {user_data['alum_kg']} кг, {alum_cost:.2f} руб.\n"
+        summary += f"🔹 อลูมิเนียม: {user_data['alum_kg']} กก., {alum_cost:.2f} บาท\n"  # "🔹 Алюминий: кг, руб."
         total_weight += user_data['alum_kg']
         total_cost += alum_cost
     
     if 'pet_kg' in user_data:
         pet_cost = user_data.get('pet_kg', 0) * user_data.get('pet_price', 0)
-        summary += f"🔹 Пластик (PET): {user_data['pet_kg']} кг, {pet_cost:.2f} руб.\n"
+        summary += f"🔹 พลาสติก (PET): {user_data['pet_kg']} กก., {pet_cost:.2f} บาท\n"  # "🔹 Пластик (PET):"
         total_weight += user_data['pet_kg']
         total_cost += pet_cost
     
     if 'glass_kg' in user_data:
         glass_cost = user_data.get('glass_kg', 0) * user_data.get('glass_price', 0)
-        summary += f"🔹 Стекло: {user_data['glass_kg']} кг, {glass_cost:.2f} руб.\n"
+        summary += f"🔹 แก้ว: {user_data['glass_kg']} กก., {glass_cost:.2f} บาท\n"  # "🔹 Стекло:"
         total_weight += user_data['glass_kg']
         total_cost += glass_cost
     
     # Дополнительные материалы
     if 'paper_kg' in user_data:
         paper_cost = user_data.get('paper_kg', 0) * user_data.get('paper_price', 0)
-        summary += f"🔸 Бумага: {user_data['paper_kg']} кг, {paper_cost:.2f} руб.\n"
+        summary += f"🔸 กระดาษ: {user_data['paper_kg']} กก., {paper_cost:.2f} บาท\n"  # "🔸 Бумага:"
         total_weight += user_data['paper_kg']
         total_cost += paper_cost
     
     if 'metal_kg' in user_data:
         metal_cost = user_data.get('metal_kg', 0) * user_data.get('metal_price', 0)
-        summary += f"🔸 Металл: {user_data['metal_kg']} кг, {metal_cost:.2f} руб.\n"
+        summary += f"🔸 โลหะ: {user_data['metal_kg']} กก., {metal_cost:.2f} บาท\n"  # "🔸 Металл:"
         total_weight += user_data['metal_kg']
         total_cost += metal_cost
     
     if 'oil_kg' in user_data:
         oil_cost = user_data.get('oil_kg', 0) * user_data.get('oil_price', 0)
-        summary += f"🔸 Масло: {user_data['oil_kg']} кг, {oil_cost:.2f} руб.\n"
+        summary += f"🔸 น้ำมัน: {user_data['oil_kg']} กก., {oil_cost:.2f} บาท\n"  # "🔸 Масло:"
         total_weight += user_data['oil_kg']
         total_cost += oil_cost
     
     if 'other_kg' in user_data:
         other_cost = user_data.get('other_kg', 0) * user_data.get('other_price', 0)
-        summary += f"🔸 Прочие: {user_data['other_kg']} кг, {other_cost:.2f} руб.\n"
+        summary += f"🔸 อื่นๆ: {user_data['other_kg']} กก., {other_cost:.2f} บาท\n"  # "🔸 Прочие:"
         total_weight += user_data['other_kg']
         total_cost += other_cost
     
     # Смешанные материалы
     if 'alum_pl_mix_kg' in user_data:
         alum_pl_mix_cost = user_data.get('alum_pl_mix_kg', 0) * user_data.get('alum_pl_mix_price', 0)
-        summary += f"🔺 Алюм-пластик: {user_data['alum_pl_mix_kg']} кг, {alum_pl_mix_cost:.2f} руб.\n"
+        summary += f"🔺 อลูมิเนียม+พลาสติก: {user_data['alum_pl_mix_kg']} กก., {alum_pl_mix_cost:.2f} บาท\n"  # "🔺 Алюм-пластик:"
         total_weight += user_data['alum_pl_mix_kg']
         total_cost += alum_pl_mix_cost
     
     if 'alum_pl_glass_mix_kg' in user_data:
         alum_pl_glass_mix_cost = user_data.get('alum_pl_glass_mix_kg', 0) * user_data.get('alum_pl_glass_mix_price', 0)
-        summary += f"🔺 Алюм-пластик-стекло: {user_data['alum_pl_glass_mix_kg']} кг, {alum_pl_glass_mix_cost:.2f} руб.\n"
+        summary += f"🔺 อลูมิเนียม+พลาสติก+แก้ว: {user_data['alum_pl_glass_mix_kg']} กก., {alum_pl_glass_mix_cost:.2f} บาท\n"  # "🔺 Алюм-пластик-стекло:"
         total_weight += user_data['alum_pl_glass_mix_kg']
         total_cost += alum_pl_glass_mix_cost
     
     if 'alum_iron_cans_mix_kg' in user_data:
         alum_iron_cans_mix_cost = user_data.get('alum_iron_cans_mix_kg', 0) * user_data.get('alum_iron_cans_mix_price', 0)
-        summary += f"🔺 Алюм-железные банки: {user_data['alum_iron_cans_mix_kg']} кг, {alum_iron_cans_mix_cost:.2f} руб.\n"
+        summary += f"🔺 อลูมิเนียม+กระป๋องเหล็ก: {user_data['alum_iron_cans_mix_kg']} กก., {alum_iron_cans_mix_cost:.2f} บาท\n"  # "🔺 Алюм-железные банки:"
         total_weight += user_data['alum_iron_cans_mix_kg']
         total_cost += alum_iron_cans_mix_cost
     
     if 'pet_mix_kg' in user_data:
         pet_mix_cost = user_data.get('pet_mix_kg', 0) * user_data.get('pet_mix_price', 0)
-        summary += f"🔺 Смешанный пластик: {user_data['pet_mix_kg']} кг, {pet_mix_cost:.2f} руб.\n"
+        summary += f"🔺 พลาสติกผสม: {user_data['pet_mix_kg']} กก., {pet_mix_cost:.2f} บาท\n"  # "🔺 Смешанный пластик:"
         total_weight += user_data['pet_mix_kg']
         total_cost += pet_mix_cost
     
     if 'other_mix_kg' in user_data:
         other_mix_cost = user_data.get('other_mix_kg', 0) * user_data.get('other_mix_price', 0)
-        summary += f"🔺 Прочий микс: {user_data['other_mix_kg']} кг, {other_mix_cost:.2f} руб.\n"
+        summary += f"🔺 อื่นๆ ผสม: {user_data['other_mix_kg']} กก., {other_mix_cost:.2f} บาท\n"  # "🔺 Прочий микс:"
         total_weight += user_data['other_mix_kg']
         total_cost += other_mix_cost
     
-    summary += f"\n💎 Итого: {total_weight:.2f} кг, {total_cost:.2f} руб."
+    summary += f"\n💎 รวม: {total_weight:.2f} กก., {total_cost:.2f} บาท"  # "💎 Итого: кг, руб."
     
     await callback.message.edit_text(summary, reply_markup=get_confirmation_keyboard())
     await callback.answer()
@@ -895,7 +904,7 @@ async def confirm_shipment(callback: CallbackQuery, state: FSMContext):
     try:
         user = await get_user_by_tg_id(callback.from_user.id)
         if not user:
-            raise ValueError("Пользователь не найден.")
+            raise ValueError("ไม่พบผู้ใช้")  # "Пользователь не найден."
         
         # Рассчитываем общие суммы для каждого материала
         alum_total = user_data.get('alum_kg', 0.0) * user_data.get('alum_price', 0.0)
@@ -987,19 +996,20 @@ async def confirm_shipment(callback: CallbackQuery, state: FSMContext):
                 
                 await callback.bot.send_message(
                     user.tg_id,
-                    f"✅ Ваш мешок с мусором был обработан\n\n"
-                    f"📦 Общий вес: {total_weight:.2f} кг\n"
-                    f"💰 Общая стоимость: {total_pay:.2f} руб.\n\n"
-                    f"Спасибо вам!"
+                    f"✅ การจัดส่งขยะของคุณได้รับการประมวลผลแล้ว\n\n"  # "Ваш мешок с мусором был обработан"
+                    f"📦 น้ำหนักรวม: {total_weight:.2f} กก.\n"  # "Общий вес: кг"
+                    f"💰 ราคารวม: {total_pay:.2f} บาท\n\n"  # "Общая стоимость: руб."
+                    f"ขอบคุณค่ะ/ครับ!"  # "Спасибо вам!"
                 )
         
         await callback.message.edit_text(
-            '✅ Данные об отгрузке успешно добавлены! Количество мешков обнулено.', reply_markup=driver_keyboard()
+            '✅ บันทึกข้อมูลการจัดส่งเรียบร้อย! จำนวนถุงถูกรีเซ็ตเป็นศูนย์',  # "Данные об отгрузке успешно добавлены! Количество мешков обнулено."
+            reply_markup=driver_keyboard()
         )
     except ValueError as e:
-        await callback.message.edit_text(f"❌ Ошибка: {str(e)}")
+        await callback.message.edit_text(f"❌ ข้อผิดพลาด: {str(e)}")  # "❌ Ошибка:"
     except Exception as e:
-        await callback.message.edit_text(f"❌ Произошла непредвиденная ошибка: {str(e)}")
+        await callback.message.edit_text(f"❌ เกิดข้อผิดพลาดที่ไม่คาดคิด: {str(e)}")  # "❌ Произошла непредвиденная ошибка:"
     finally:
         await state.clear()
         await callback.answer()
@@ -1009,8 +1019,7 @@ async def confirm_shipment(callback: CallbackQuery, state: FSMContext):
 async def cancel_shipment(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
-        "❌ Отгрузка отменена. Все данные удалены.",
-       
+        "❌ ยกเลิกการจัดส่ง ข้อมูลทั้งหมดถูกลบแล้ว",  # "❌ Отгрузка отменена. Все данные удалены."
     )
     await callback.answer()
 
@@ -1019,8 +1028,7 @@ async def cancel_shipment(callback: CallbackQuery, state: FSMContext):
 async def cancel_during_input(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text(
-        "❌ Ввод данных прерван. Все временные данные удалены.",
-        
+        "❌ ยกเลิกการป้อนข้อมูล ข้อมูลชั่วคราวทั้งหมดถูกลบ",  # "❌ Ввод данных прерван. Все временные данные удалены."
     )
     await callback.answer()
 
@@ -1029,11 +1037,11 @@ async def cancel_during_input(callback: CallbackQuery, state: FSMContext):
 async def start_create_point(callback: CallbackQuery, state: FSMContext):
     """Начало процесса создания точки"""
     await callback.message.answer(
-        "Введите ID новой точки в формате RZZN, где:\n"
-        "R - номер региона (1 цифра)\n"
-        "ZZ - номер зоны (2 цифры)\n"
-        "N - номер точки в зоне (1 цифра)\n"
-        "Пример: 1021 - точка в регионе 1, зоне 02, номер точки 1",
+        "กรุณากรอก ID จุดใหม่ในรูปแบบ RZZN โดยที่:\n"  # "Введите ID новой точки в формате RZZN, где:"
+        "R - หมายเลขภูมิภาค (1 หลัก)\n"  # "R - номер региона (1 цифра)"
+        "ZZ - หมายเลขโซน (2 หลัก)\n"  # "ZZ - номер зоны (2 цифры)"
+        "N - หมายเลขจุดในโซน (1 หลัก)\n"  # "N - номер точки в зоне (1 цифра)"
+        "ตัวอย่าง: 1021 - จุดในภูมิภาค 1 โซน 02 จุดที่ 1",  # "Пример: 1021 - точка в регионе 1, зоне 02, номер точки 1"
         reply_markup=cancel_keyboard()
     )
     await state.set_state(CreatePoint.point_id)
@@ -1044,14 +1052,14 @@ async def process_point_id(message: Message, state: FSMContext):
     """Обработка ID точки с проверкой формата"""
     point_id = message.text
     region_id = int(point_id[0])
-    zone_num = int(point_id[1:3])  # Номер зоны (2 цифры)
-    zone_id = int(f"{region_id}{zone_num:02d}")  # Полный ID зоны (3 цифры)
+    zone_num = int(point_id[1:3])
+    zone_id = int(f"{region_id}{zone_num:02d}")
     point_num = int(point_id[3])
     
     # Проверяем, существует ли уже точка с таким ID
     if await get_point_by_id(point_id):
         await message.answer(
-            "Точка с таким ID уже существует! Пожалуйста, введите другой ID.",
+            "มีจุดนี้อยู่แล้ว! กรุณากรอก ID อื่น",  # "Точка с таким ID уже существует! Пожалуйста, введите другой ID."
             reply_markup=cancel_keyboard()
         )
         return
@@ -1059,17 +1067,17 @@ async def process_point_id(message: Message, state: FSMContext):
     await state.update_data(
         point_id=point_id,
         region_id=region_id,
-        zone_num=zone_num,  # Сохраняем номер зоны (2 цифры)
-        zone_id=zone_id,     # Сохраняем полный ID зоны (3 цифры)
+        zone_num=zone_num,
+        zone_id=zone_id,
         point_num=point_num
     )
     
     await message.answer(
-        f"ID точки: {point_id}\n"
-        f"Регион: {region_id}\n"
-        f"Номер зоны: {zone_num}\n"
-        f"Номер точки: {point_num}\n\n"
-        "Введите название точки:",
+        f"ID จุด: {point_id}\n"
+        f"ภูมิภาค: {region_id}\n"
+        f"หมายเลขโซน: {zone_num}\n"
+        f"หมายเลขจุด: {point_num}\n\n"
+        "กรุณากรอกชื่อจุด:",  # "Введите название точки:"
         reply_markup=cancel_keyboard()
     )
     await state.set_state(CreatePoint.point_name)
@@ -1078,8 +1086,8 @@ async def process_point_id(message: Message, state: FSMContext):
 async def process_point_id_invalid(message: Message):
     """Обработка неверного формата ID точки"""
     await message.answer(
-        "Неверный формат ID точки! Должно быть 4 цифры в формате RZZN.\n"
-        "Пример: 1021 - точка в регионе 1, зоне 02, номер точки 1",
+        "รูปแบบ ID จุดไม่ถูกต้อง! ต้องเป็นตัวเลข 4 หลักในรูปแบบ RZZN\n"
+        "ตัวอย่าง: 1021 - จุดในภูมิภาค 1 โซน 02 จุดที่ 1",  # "Неверный формат ID точки! Должно быть 4 цифры в формате RZZN"
         reply_markup=cancel_keyboard()
     )
 
@@ -1088,7 +1096,7 @@ async def process_point_name(message: Message, state: FSMContext):
     """Обработка названия точки"""
     await state.update_data(point_name=message.text)
     await message.answer(
-        "Введите имя владельца точки:",
+        "กรุณากรอกชื่อเจ้าของจุด:",  # "Введите имя владельца точки:"
         reply_markup=cancel_keyboard()
     )
     await state.set_state(CreatePoint.point_owner_name)
@@ -1098,7 +1106,7 @@ async def process_owner_name(message: Message, state: FSMContext):
     """Обработка имени владельца"""
     await state.update_data(point_owner_name=message.text)
     await message.answer(
-        "Введите номер телефона владельца:",
+        "กรุณากรอกเบอร์โทรเจ้าของจุด:",  # "Введите номер телефона владельца:"
         reply_markup=cancel_keyboard()
     )
     await state.set_state(CreatePoint.phone_number)
@@ -1108,7 +1116,7 @@ async def process_phone_number(message: Message, state: FSMContext):
     """Обработка номера телефона"""
     await state.update_data(phone_number=message.text)
     await message.answer(
-        "Введите адрес точки:",
+        "กรุณากรอกที่อยู่จุด:",  # "Введите адрес точки:"
         reply_markup=cancel_keyboard()
     )
     await state.set_state(CreatePoint.address)
@@ -1122,16 +1130,16 @@ async def process_address(message: Message, state: FSMContext):
     
     # Формируем сообщение для подтверждения
     confirm_text = (
-        "Проверьте введенные данные:\n\n"
-        f"ID точки: {data['point_id']}\n"
-        f"Регион: {data['region_id']}\n"
-        f"Зона: {data['zone_num']}\n"
-        f"Номер точки: {data['point_num']}\n"
-        f"Название: {data['point_name']}\n"
-        f"Владелец: {data['point_owner_name']}\n"
-        f"Телефон: {data['phone_number']}\n"
-        f"Адрес: {data['address']}\n\n"
-        "Все верно?"
+        "กรุณาตรวจสอบข้อมูลที่ป้อน:\n\n"  # "Проверьте введенные данные:"
+        f"ID จุด: {data['point_id']}\n"
+        f"ภูมิภาค: {data['region_id']}\n"
+        f"โซน: {data['zone_num']}\n"
+        f"หมายเลขจุด: {data['point_num']}\n"
+        f"ชื่อ: {data['point_name']}\n"
+        f"เจ้าของ: {data['point_owner_name']}\n"
+        f"โทรศัพท์: {data['phone_number']}\n"
+        f"ที่อยู่: {data['address']}\n\n"
+        "ถูกต้องทั้งหมดหรือไม่?"  # "Все верно?"
     )
     
     await message.answer(confirm_text, reply_markup=confirm_keyboard())
@@ -1159,16 +1167,16 @@ async def confirm_point_creation(callback: CallbackQuery, state: FSMContext):
             phone_number=data['phone_number'],
             address=data['address'],
             bags_count=0,
-            zone_id=data['zone_id']  # Используем zone_id из 3 цифр
+            zone_id=data['zone_id']
         )
         
         await callback.message.answer(
-            "✅ Точка успешно создана!",
+            "✅ สร้างจุดเรียบร้อยแล้ว!",  # "✅ Точка успешно создана!"
             reply_markup=admin_keyboard()
         )
     except Exception as e:
         await callback.message.answer(
-            f"❌ Ошибка при создании точки: {str(e)}",
+            f"❌ ข้อผิดพลาดในการสร้างจุด: {str(e)}",  # "❌ Ошибка при создании точки:"
             reply_markup=admin_keyboard()
         )
     finally:
@@ -1178,7 +1186,7 @@ async def confirm_point_creation(callback: CallbackQuery, state: FSMContext):
 async def cancel_point_creation(callback: CallbackQuery, state: FSMContext):
     """Отмена создания точки"""
     await callback.message.answer(
-        "❌ Создание точки отменено.",
+        "❌ ยกเลิกการสร้างจุด",  # "❌ Создание точки отменено."
         reply_markup=admin_keyboard()
     )
     await state.clear()
@@ -1187,7 +1195,7 @@ async def cancel_point_creation(callback: CallbackQuery, state: FSMContext):
 async def cancel_creation_process(callback: CallbackQuery, state: FSMContext):
     """Отмена процесса создания на любом этапе"""
     await callback.message.answer(
-        "❌ Создание точки прервано.",
+        "❌ ยกเลิกกระบวนการสร้างจุด",  # "❌ Создание точки прервано."
         reply_markup=admin_keyboard()
     )
     await state.clear()
