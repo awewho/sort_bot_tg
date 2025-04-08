@@ -204,17 +204,17 @@ async def generate_log_report(callback: CallbackQuery):
     
     # 1. Лист с заявками (тайский + английский)
     if requests:
-        ws_requests = wb.create_sheet("คำขอ/Requests")
+        ws_requests = wb.create_sheet("Requests")
         headers_requests = [
-            "วันที่/Date", 
-            "จุด ID/Point ID", 
-            "ผู้ใช้ ID/User ID", 
-            "ประเภทกิจกรรม/Activity Type",
-            "ถุง PET/PET Bags", 
-            "ถุงอลูมิเนียม/Aluminum Bags", 
-            "ถุงแก้ว/Glass Bags", 
-            "ถุงอื่นๆ/Other Bags",
-            "จำนวนทั้งหมด/Total Quantity"
+            "Date", 
+            "Point ID", 
+            "User ID", 
+            "Activity Type",
+            "PET Bags", 
+            "Aluminum Bags", 
+            "Glass Bags", 
+            "Other Bags",
+            "Total Quantity"
         ]
         ws_requests.append(headers_requests)
         
@@ -234,32 +234,32 @@ async def generate_log_report(callback: CallbackQuery):
     
     # 2. Лист с отгрузками (тайский + английский)
     if shipments:
-        ws_shipments = wb.create_sheet("การจัดส่ง/Shipments")
+        ws_shipments = wb.create_sheet("Shipments")
         headers_shipments = [
-            "วันที่/Date", 
-            "จุด ID/Point ID", 
-            "คนขับ ID/Driver ID", 
-            "ยอดรวม/Total Payment",
+            "Date", 
+            "Point ID", 
+            "Driver ID", 
+            "Total Payment",
             # PET
-            "PET กก./PET kg", "ราคา PET/PET Price", "รวม PET/PET Total",
+            "PET kg", "PET Price", "PET Total",
             # Алюминий
-            "อลูมิเนียม กก./Aluminum kg", "ราคาอลูมิเนียม/Aluminum Price", "รวมอลูมิเนียม/Aluminum Total",
+            "Aluminum kg", "Aluminum Price", "Aluminum Total",
             # Стекло
-            "แก้ว กก./Glass kg", "ราคาแก้ว/Glass Price", "รวมแก้ว/Glass Total",
+            "Glass kg", "Glass Price", "Glass Total",
             # Бумага
-            "กระดาษ กก./Paper kg", "ราคากระดาษ/Paper Price", "รวมกระดาษ/Paper Total",
+            "Paper kg", "Paper Price", "Paper Total",
             # Металл
-            "โลหะ กก./Metal kg", "ราคาโลหะ/Metal Price", "รวมโลหะ/Metal Total",
+            "Metal kg", "Metal Price", "Metal Total",
             # Масло
-            "น้ำมัน กก./Oil kg", "ราคาน้ำมัน/Oil Price", "รวมน้ำมัน/Oil Total",
+            "Oil kg", "Oil Price", "Oil Total",
             # Другое
-            "อื่นๆ กก./Other kg", "ราคาอื่นๆ/Other Price", "รวมอื่นๆ/Other Total",
+            "Other kg", "Other Price", "Other Total",
             # Смеси
-            "อลูมิเนียม+พลาสติก กก./Alum+Plastic kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "อลูมิเนียม+พลาสติก+แก้ว กก./Alum+Plastic+Glass kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "อลูมิเนียม+เหล็ก กก./Alum+Iron kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "PET ผสม กก./PET Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "อื่นๆ ผสม กก./Other Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total"
+            "Alum+Plastic kg", "Alum+Plastic Price", "Alum+Plastic Total",
+            "Alum+Plastic+Glass kg", "Alum+Plastic+Glass Price", "Alum+Plastic+Glass Total",
+            "Alum+Iron kg", "Alum+Iron Price", "Alum+Iron Total",
+            "PET Mix kg", "PET Mix Price", "PET Mix Total",
+            "Other Mix kg", "Other Mix Price", "Other Mix Total"
         ]
         ws_shipments.append(headers_shipments)
         
@@ -285,37 +285,37 @@ async def generate_log_report(callback: CallbackQuery):
     
     # 3. Общий лист (тайский + английский)
     if combined:
-        ws_combined = wb.create_sheet("ข้อมูลทั้งหมด/All Data")
+        ws_combined = wb.create_sheet("All Data")
         headers_combined = [
-            "ประเภท/Type", 
-            "วันที่/Date", 
-            "จุด ID/Point ID", 
-            "ผู้ใช้ ID/User ID",
+            "Type", 
+            "Date", 
+            "Point ID", 
+            "User ID",
             # Основные материалы
-            "PET (ถุง/กก.)/PET (Bags/kg)", "ราคา PET/PET Price", "รวม PET/PET Total",
-            "อลูมิเนียม (ถุง/กก.)/Aluminum (Bags/kg)", "ราคาอลูมิเนียม/Aluminum Price", "รวมอลูมิเนียม/Aluminum Total",
-            "แก้ว (ถุง/กก.)/Glass (Bags/kg)", "ราคาแก้ว/Glass Price", "รวมแก้ว/Glass Total",
+            "PET (Bags/kg)", "PET Price", "PET Total",
+            "Aluminum (Bags/kg)", "Aluminum Price", "Aluminum Total",
+            "Glass (Bags/kg)", "Glass Price", "Glass Total",
             # Дополнительные материалы
-            "กระดาษ กก./Paper kg", "ราคากระดาษ/Paper Price", "รวมกระดาษ/Paper Total",
-            "โลหะ กก./Metal kg", "ราคาโลหะ/Metal Price", "รวมโลหะ/Metal Total",
-            "น้ำมัน กก./Oil kg", "ราคาน้ำมัน/Oil Price", "รวมน้ำมัน/Oil Total",
-            "อื่นๆ กก./Other kg", "ราคาอื่นๆ/Other Price", "รวมอื่นๆ/Other Total",
+            "Paper kg", "Paper Price", "Paper Total",
+            "Metal kg", "Metal Price", "Metal Total",
+            "Oil kg", "Oil Price", "Oil Total",
+            "Other kg", "Other Price", "Other Total",
             # Смеси
-            "อลูมิเนียม+พลาสติก กก./Alum+Plastic kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "อลูมิเนียม+พลาสติก+แก้ว กก./Alum+Plastic+Glass kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "อลูมิเนียม+เหล็ก กก./Alum+Iron kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "PET ผสม กก./PET Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
-            "อื่นๆ ผสม กก./Other Mix kg", "ราคาผสม/Mix Price", "รวมผสม/Mix Total",
+            "Alum+Plastic kg", "Alum+Plastic Price", "Alum+Plastic Total",
+            "Alum+Plastic+Glass kg", "Alum+Plastic+Glass Price", "Alum+Plastic+Glass Total",
+            "Alum+Iron kg", "Alum+Iron Price", "Alum+Iron Total",
+            "PET Mix kg", "รPET Mix Price", "PET Mix Total",
+            "Other Mix kg", "Other Mix Price", "Other Mix Total",
             # Итоги
-            "ยอดรวม/Total Amount", 
-            "ประเภทกิจกรรม (สำหรับคำขอ)/Activity Type (for requests)"
+            "Total Amount", 
+            "Activity Type (for requests)"
         ]
         ws_combined.append(headers_combined)
         
         for item in combined:
             if item["type"] == "request":
                 row = [
-                    "คำขอ/Request",
+                    "Request",
                     item["timestamp"].strftime('%Y-%m-%d %H:%M'),
                     item["point_id"],
                     item["user_id"],
@@ -326,7 +326,7 @@ async def generate_log_report(callback: CallbackQuery):
                 ]
             else:
                 row = [
-                    "การจัดส่ง/Shipment",
+                    "Shipment",
                     item["timestamp"].strftime('%Y-%m-%d %H:%M'),
                     item["point_id"],
                     item["user_id"],
@@ -376,10 +376,16 @@ async def process_add_shipment(callback: CallbackQuery, state: FSMContext):
 async def process_point_id(message: Message, state: FSMContext):
     try:
         point_id = int(message.text)
+        # Проверяем существование точки
+        point = await get_point_by_id(point_id)
+        if not point:
+            await message.answer("ข้อผิดพลาด: ไม่พบจุดนี้ในระบบ กรุณากรอกใหม่")  # "Ошибка: Точка не найдена в системе. Пожалуйста, введите ID точки заново."
+            return
+            
         await state.update_data(point_id=point_id)
-        await message.answer('กรุณาเลือกประเภท:', reply_markup=get_category_keyboard())  # "Выберите категорию:"
+        await message.answer('กรุณาเลือกประเภท:', reply_markup=get_category_keyboard()) #Пожалуйста, выберите тип
     except ValueError:
-        await message.answer("ข้อผิดพลาด: ID จุดต้องเป็นตัวเลขเต็ม กรุณากรอกใหม่")  # "Ошибка: ID точки должен быть целым числом. Пожалуйста, введите ID точки заново."
+        await message.answer("ข้อผิดพลาด: ID จุดต้องเป็นตัวเลขเต็ม กรุณากรอกใหม่") #Ошибка: идентификатор точки должен быть целым числом. пожалуйста, введите новый.
 
 # Обработчики выбора категорий
 @admin.callback_query(F.data == "category_main")
@@ -412,7 +418,8 @@ async def process_alum_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.alum_kg)
 async def process_alum_kg(message: Message, state: FSMContext):
     try:
-        alum_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        alum_kg = float(text)
         if alum_kg < 0:
             raise ValueError
         await state.update_data(alum_kg=alum_kg)
@@ -447,7 +454,8 @@ async def process_pet_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.pet_kg)
 async def process_pet_kg(message: Message, state: FSMContext):
     try:
-        pet_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        pet_kg = float(text)
         if pet_kg < 0:
             raise ValueError
         await state.update_data(pet_kg=pet_kg)
@@ -482,7 +490,8 @@ async def process_glass_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.glass_kg)
 async def process_glass_kg(message: Message, state: FSMContext):
     try:
-        glass_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        glass_kg = float(text)
         if glass_kg < 0:
             raise ValueError
         await state.update_data(glass_kg=glass_kg)
@@ -517,7 +526,8 @@ async def process_paper_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.paper_kg)
 async def process_paper_kg(message: Message, state: FSMContext):
     try:
-        paper_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        paper_kg = float(text)
         if paper_kg < 0:
             raise ValueError
         await state.update_data(paper_kg=paper_kg)
@@ -552,7 +562,8 @@ async def process_metal_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.metal_kg)
 async def process_metal_kg(message: Message, state: FSMContext):
     try:
-        metal_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        metal_kg = float(text)
         if metal_kg < 0:
             raise ValueError
         await state.update_data(metal_kg=metal_kg)
@@ -587,7 +598,8 @@ async def process_oil_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.oil_kg)
 async def process_oil_kg(message: Message, state: FSMContext):
     try:
-        oil_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        oil_kg = float(text)
         if oil_kg < 0:
             raise ValueError
         await state.update_data(oil_kg=oil_kg)
@@ -622,7 +634,8 @@ async def process_other_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.other_kg)
 async def process_other_kg(message: Message, state: FSMContext):
     try:
-        other_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        other_kg = float(text)
         if other_kg < 0:
             raise ValueError
         await state.update_data(other_kg=other_kg)
@@ -667,7 +680,8 @@ async def process_alum_pl_mix_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.alum_pl_mix_kg)
 async def process_alum_pl_mix_kg(message: Message, state: FSMContext):
     try:
-        alum_pl_mix_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        alum_pl_mix_kg = float(text)
         if alum_pl_mix_kg < 0:
             raise ValueError
         
@@ -697,7 +711,8 @@ async def process_alum_pl_glass_mix_start(callback: CallbackQuery, state: FSMCon
 @admin.message(ShipmentStates.alum_pl_glass_mix_kg)
 async def process_alum_pl_glass_mix_kg(message: Message, state: FSMContext):
     try:
-        alum_pl_glass_mix_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        alum_pl_glass_mix_kg = float(text)
         if alum_pl_glass_mix_kg < 0:
             raise ValueError
         
@@ -716,6 +731,7 @@ async def process_alum_pl_glass_mix_kg(message: Message, state: FSMContext):
         )
     except ValueError:
         await message.answer("ข้อผิดพลาด: น้ำหนักต้องเป็นตัวเลขบวก กรุณากรอกใหม่")
+
  # Обработчики для алюм-железные банки
 @admin.callback_query(F.data == "material_alum_iron_cans_mix")
 async def process_alum_iron_cans_mix_start(callback: CallbackQuery, state: FSMContext):
@@ -726,7 +742,8 @@ async def process_alum_iron_cans_mix_start(callback: CallbackQuery, state: FSMCo
 @admin.message(ShipmentStates.alum_iron_cans_mix_kg)
 async def process_alum_iron_cans_mix_kg(message: Message, state: FSMContext):
     try:
-        alum_iron_cans_mix_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        alum_iron_cans_mix_kg = float(text)
         if alum_iron_cans_mix_kg < 0:
             raise ValueError
         
@@ -756,7 +773,8 @@ async def process_pet_mix_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.pet_mix_kg)
 async def process_pet_mix_kg(message: Message, state: FSMContext):
     try:
-        pet_mix_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        pet_mix_kg = float(text)
         if pet_mix_kg < 0:
             raise ValueError
         
@@ -786,7 +804,8 @@ async def process_other_mix_start(callback: CallbackQuery, state: FSMContext):
 @admin.message(ShipmentStates.other_mix_kg)
 async def process_other_mix_kg(message: Message, state: FSMContext):
     try:
-        other_mix_kg = float(message.text)
+        text = message.text.replace(',', '.').strip()
+        other_mix_kg = float(text)
         if other_mix_kg < 0:
             raise ValueError
         
