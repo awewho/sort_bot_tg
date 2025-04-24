@@ -15,7 +15,7 @@ from app.database.requests import (
     get_point_by_id,get_region_by_id,get_zone_by_id, 
     add_shipment, get_user_by_point_id,
     update_bags_count, get_all_requests_sorted,
-    get_all_shipments_sorted, get_combined_data_sorted
+    get_all_shipments_sorted, get_combined_data_sorted, delete_point_and_related_data
 )
 from app.states import Reports, ShipmentStates, CreatePoint
 from app.keyboards import (
@@ -1253,6 +1253,93 @@ async def cancel_creation_process(callback: CallbackQuery, state: FSMContext):
     """Отмена процесса создания на любом этапе"""
     await callback.message.answer(
         "❌ ยกเลิกกระบวนการสร้างจุด",  # "❌ Создание точки прервано."
+        reply_markup=admin_keyboard()
+    )
+    await state.clear()
+
+
+
+@admin.callback_query(F.data == "delete_point")
+async def start_delete_point(callback: CallbackQuery, state: FSMContext):
+    """Начало процесса удаления точки"""
+    await callback.message.answer(
+        "กรุณากรอก ID จุดที่ต้องการลบ:",  # "Введите ID точки для удаления:"
+        reply_markup=cancel_keyboard()
+    )
+    await state.set_state("delete_point")
+    await callback.answer()
+
+@admin.message(F.text.regexp(r'^\d{4}$'), StateFilter("delete_point"))
+async def process_delete_point_id(message: Message, state: FSMContext):
+    """Обработка ID точки для удаления"""
+    point_id = message.text
+    
+    # Проверяем существование точки
+    point = await get_point_by_id(point_id)
+    if not point:
+        await message.answer(
+            "ไม่พบจุดนี้ในระบบ! กรุณาตรวจสอบ ID อีกครั้ง",  # "Точка не найдена! Проверьте ID"
+            reply_markup=cancel_keyboard()
+        )
+        return
+    
+    # Получаем пользователя, привязанного к точке
+    user = await get_user_by_point_id(point_id)
+    
+    confirm_text = (
+        "⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบจุดนี้?\n\n"
+        f"ID จุด: {point_id}\n"
+    )
+    
+    if user:
+        confirm_text += f"ผู้ใช้ที่ผูกติด: {user.tg_id}\n"
+    
+    confirm_text += (
+        "\nการดำเนินการนี้จะ:\n"
+        "- ลบจุดออกจากระบบ\n"
+        "- ลบผู้ใช้ที่ผูกติด (ถ้ามี)\n"
+        "- ลบคำขอทั้งหมดของจุดนี้\n"
+        "- เก็บประวัติการจัดส่งไว้\n"
+        "\nยืนยันการลบหรือไม่?"  # "Подтвердите удаление?"
+    )
+    
+    await state.update_data(point_id=point_id)
+    await message.answer(confirm_text, reply_markup=confirm_keyboard())
+    await state.set_state("confirm_delete_point")
+
+@admin.message(StateFilter("delete_point"))
+async def process_delete_point_id_invalid(message: Message):
+    """Обработка неверного формата ID точки при удалении"""
+    await message.answer(
+        "รูปแบบ ID จุดไม่ถูกต้อง! ต้องเป็นตัวเลข 4 หลัก\n"
+        "ตัวอย่าง: 1021",
+        reply_markup=cancel_keyboard()
+    )
+
+@admin.callback_query(StateFilter("confirm_delete_point"), F.data == "confirm")
+async def confirm_point_deletion(callback: CallbackQuery, state: FSMContext):
+    """Подтверждение удаления точки"""
+    data = await state.get_data()
+    point_id = str(data['point_id'])  # Убедимся, что передаем строку
+    
+    if await delete_point_and_related_data(point_id):
+        await callback.message.answer(
+            f"✅ จุด {point_id} ถูกลบออกจากระบบเรียบร้อย!",
+            reply_markup=admin_keyboard()
+        )
+    else:
+        await callback.message.answer(
+            f"❌ เกิดข้อผิดพลาดในการลบจุด {point_id}",
+            reply_markup=admin_keyboard()
+        )
+    
+    await state.clear()
+
+@admin.callback_query(StateFilter("confirm_delete_point"), F.data == "cancel")
+async def cancel_point_deletion(callback: CallbackQuery, state: FSMContext):
+    """Отмена удаления точки"""
+    await callback.message.answer(
+        "❌ ยกเลิกการลบจุด",  # "Удаление точки отменено"
         reply_markup=admin_keyboard()
     )
     await state.clear()

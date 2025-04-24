@@ -41,7 +41,8 @@ def admin_keyboard():
     builder.add(
         InlineKeyboardButton(text="รายงาน", callback_data="report"),  # "Отчеты"
         InlineKeyboardButton(text="สร้างรายงานบันทึก", callback_data="generate_log_report"),  # "Сформировать лог"
-        InlineKeyboardButton(text="สร้างจุด", callback_data="create_point")  # "Создать точку"
+        InlineKeyboardButton(text="สร้างจุด", callback_data="create_point"),  # "Создать точку"
+        InlineKeyboardButton(text="ลบจุด", callback_data="delete_point")
     )
     builder.adjust(2)
     return builder.as_markup()

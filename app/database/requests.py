@@ -101,12 +101,14 @@ async def update_bags_count(point_id, bags_count):
             .values(bags_count=bags_count))
         await session.commit()
 
-async def get_user_by_point_id(point_id):
+async def get_user_by_point_id(point_id: str):
+    """Получает пользователя по ID точки с приведением типов"""
     async with async_session() as session:
         user = await session.scalar(
             select(User)
-            .where(User.point_id == point_id)
-            .options(selectinload(User.point)))
+            .where(User.point_id == int(point_id))  # Явное преобразование в int
+            .options(selectinload(User.point))
+        )
         return user
 
 async def get_zones_by_region(region_id):
@@ -354,3 +356,73 @@ async def get_combined_data_sorted():
         
         combined = request_data + shipment_data
         return sorted(combined, key=lambda x: x["timestamp"])
+
+async def delete_point_and_related_data(point_id: str):
+    """
+    Удаляет точку и связанные данные:
+    - Отгрузки сохраняем, переназначая на системного пользователя (tg_id=0)
+    - Заявки (requests) удаляем полностью
+    - Пользователя удаляем
+    - Точку удаляем
+    """
+    async with async_session() as session:
+        try:
+            # 1. Находим пользователя, связанного с точкой
+            user = await session.scalar(
+                select(User)
+                .where(User.point_id == int(point_id))
+            )
+            
+            if not user:
+                # Если пользователя нет, просто удаляем точку и заявки
+                await session.execute(
+                    delete(Request)
+                    .where(Request.point_id == int(point_id))
+                )
+                await session.execute(
+                    delete(Point)
+                    .where(Point.point_id == int(point_id))
+                )
+                await session.commit()
+                return True
+
+            # 2. Создаем/проверяем системного пользователя
+            system_user = await session.scalar(
+                select(User)
+                .where(User.tg_id == 0)
+            )
+            
+            if not system_user:
+                system_user = User(tg_id=0, point_id=None)
+                session.add(system_user)
+                await session.flush()  # Сохраняем, чтобы получить ID
+
+            # 3. Переназначаем отгрузки на системного пользователя
+            await session.execute(
+                update(Shipment)
+                .where(Shipment.user_id == user.tg_id)
+                .values(user_id=system_user.tg_id)
+            )
+
+            # 4. Удаляем все заявки точки (requests)
+            await session.execute(
+                delete(Request)
+                .where(Request.point_id == int(point_id))
+            )
+
+            # 5. Удаляем оригинального пользователя
+            await session.delete(user)
+
+            # 6. Удаляем саму точку
+            await session.execute(
+                delete(Point)
+                .where(Point.point_id == int(point_id))
+            )
+
+            await session.commit()
+            return True
+            
+        except Exception as e:
+            await session.rollback()
+            print(f"Error deleting point {point_id}: {str(e)}")
+            return False
