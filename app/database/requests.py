@@ -154,11 +154,13 @@ async def is_point_available(point_id):
 async def add_shipment(point_id, user_id, **materials):
     async with async_session() as session:
         # Удаляем все *_total поля из materials, если они там есть
-        for field in ['alum_total', 'pet_total', 'glass_total', 'paper_total', 
-                     'metal_total', 'oil_total', 'other_total',
-                     'alum_pl_mix_total', 'alum_pl_glass_mix_total', 
-                     'alum_iron_cans_mix_total', 'pet_mix_total', 
-                     'other_mix_total', 'total_pay']:
+        for field in [
+            'alum_total', 'pet_total', 'glass_total', 'paper_total', 
+            'iron_total', 'oil_total', 'other_total',
+            'small_beer_box_total', 'large_beer_box_total', 'mixed_beer_box_total',
+            'colored_plastic_total', 'plastic_bag_total', 'mix_total',
+            'total_pay'
+        ]:
             materials.pop(field, None)
         
         # Расчет всех total значений
@@ -167,14 +169,15 @@ async def add_shipment(point_id, user_id, **materials):
             'pet': materials.get('pet_kg', 0.0) * materials.get('pet_price', 0.0),
             'glass': materials.get('glass_kg', 0.0) * materials.get('glass_price', 0.0),
             'paper': materials.get('paper_kg', 0.0) * materials.get('paper_price', 0.0),
-            'metal': materials.get('metal_kg', 0.0) * materials.get('metal_price', 0.0),
+            'iron': materials.get('iron_kg', 0.0) * materials.get('iron_price', 0.0),
             'oil': materials.get('oil_kg', 0.0) * materials.get('oil_price', 0.0),
             'other': materials.get('other_kg', 0.0) * materials.get('other_price', 0.0),
-            'alum_pl_mix': materials.get('alum_pl_mix_kg', 0.0) * materials.get('alum_pl_mix_price', 0.0),
-            'alum_pl_glass_mix': materials.get('alum_pl_glass_mix_kg', 0.0) * materials.get('alum_pl_glass_mix_price', 0.0),
-            'alum_iron_cans_mix': materials.get('alum_iron_cans_mix_kg', 0.0) * materials.get('alum_iron_cans_mix_price', 0.0),
-            'pet_mix': materials.get('pet_mix_kg', 0.0) * materials.get('pet_mix_price', 0.0),
-            'other_mix': materials.get('other_mix_kg', 0.0) * materials.get('other_mix_price', 0.0)
+            'small_beer_box': materials.get('small_beer_box_kg', 0.0) * materials.get('small_beer_box_price', 0.0),
+            'large_beer_box': materials.get('large_beer_box_kg', 0.0) * materials.get('large_beer_box_price', 0.0),
+            'mixed_beer_box': materials.get('mixed_beer_box_kg', 0.0) * materials.get('mixed_beer_box_price', 0.0),
+            'colored_plastic': materials.get('colored_plastic_kg', 0.0) * materials.get('colored_plastic_price', 0.0),
+            'plastic_bag': materials.get('plastic_bag_kg', 0.0) * materials.get('plastic_bag_price', 0.0),
+            'mix': materials.get('mix_kg', 0.0) * materials.get('mix_price', 0.0)
         }
         
         total_pay = sum(totals.values())
@@ -183,45 +186,60 @@ async def add_shipment(point_id, user_id, **materials):
         shipment = Shipment(
             point_id=point_id,
             user_id=user_id,
-            # Основные поля
-            alum_kg=materials.get('alum_kg', 0.0),
-            alum_price=materials.get('alum_price', 0.0),
-            alum_total=totals['alum'],
+            # Основные материалы (категория 1)
             pet_kg=materials.get('pet_kg', 0.0),
             pet_price=materials.get('pet_price', 0.0),
             pet_total=totals['pet'],
-            glass_kg=materials.get('glass_kg', 0.0),
-            glass_price=materials.get('glass_price', 0.0),
-            glass_total=totals['glass'],
-            # Дополнительные поля
+            
             paper_kg=materials.get('paper_kg', 0.0),
             paper_price=materials.get('paper_price', 0.0),
             paper_total=totals['paper'],
-            metal_kg=materials.get('metal_kg', 0.0),
-            metal_price=materials.get('metal_price', 0.0),
-            metal_total=totals['metal'],
+            
+            alum_kg=materials.get('alum_kg', 0.0),
+            alum_price=materials.get('alum_price', 0.0),
+            alum_total=totals['alum'],
+            
+            glass_kg=materials.get('glass_kg', 0.0),
+            glass_price=materials.get('glass_price', 0.0),
+            glass_total=totals['glass'],
+            
+            small_beer_box_kg=materials.get('small_beer_box_kg', 0.0),
+            small_beer_box_price=materials.get('small_beer_box_price', 0.0),
+            small_beer_box_total=totals['small_beer_box'],
+            
+            large_beer_box_kg=materials.get('large_beer_box_kg', 0.0),
+            large_beer_box_price=materials.get('large_beer_box_price', 0.0),
+            large_beer_box_total=totals['large_beer_box'],
+            
+            mixed_beer_box_kg=materials.get('mixed_beer_box_kg', 0.0),
+            mixed_beer_box_price=materials.get('mixed_beer_box_price', 0.0),
+            mixed_beer_box_total=totals['mixed_beer_box'],
+            
+            # Другие материалы (категория 2)
             oil_kg=materials.get('oil_kg', 0.0),
             oil_price=materials.get('oil_price', 0.0),
             oil_total=totals['oil'],
+            
+            colored_plastic_kg=materials.get('colored_plastic_kg', 0.0),
+            colored_plastic_price=materials.get('colored_plastic_price', 0.0),
+            colored_plastic_total=totals['colored_plastic'],
+            
+            iron_kg=materials.get('iron_kg', 0.0),
+            iron_price=materials.get('iron_price', 0.0),
+            iron_total=totals['iron'],
+            
+            plastic_bag_kg=materials.get('plastic_bag_kg', 0.0),
+            plastic_bag_price=materials.get('plastic_bag_price', 0.0),
+            plastic_bag_total=totals['plastic_bag'],
+            
+            mix_kg=materials.get('mix_kg', 0.0),
+            mix_price=materials.get('mix_price', 0.0),
+            mix_total=totals['mix'],
+            
             other_kg=materials.get('other_kg', 0.0),
             other_price=materials.get('other_price', 0.0),
             other_total=totals['other'],
-            # Смешанные материалы
-            alum_pl_mix_kg=materials.get('alum_pl_mix_kg', 0.0),
-            alum_pl_mix_price=materials.get('alum_pl_mix_price', 0.0),
-            alum_pl_mix_total=totals['alum_pl_mix'],
-            alum_pl_glass_mix_kg=materials.get('alum_pl_glass_mix_kg', 0.0),
-            alum_pl_glass_mix_price=materials.get('alum_pl_glass_mix_price', 0.0),
-            alum_pl_glass_mix_total=totals['alum_pl_glass_mix'],
-            alum_iron_cans_mix_kg=materials.get('alum_iron_cans_mix_kg', 0.0),
-            alum_iron_cans_mix_price=materials.get('alum_iron_cans_mix_price', 0.0),
-            alum_iron_cans_mix_total=totals['alum_iron_cans_mix'],
-            pet_mix_kg=materials.get('pet_mix_kg', 0.0),
-            pet_mix_price=materials.get('pet_mix_price', 0.0),
-            pet_mix_total=totals['pet_mix'],
-            other_mix_kg=materials.get('other_mix_kg', 0.0),
-            other_mix_price=materials.get('other_mix_price', 0.0),
-            other_mix_total=totals['other_mix'],
+            
             # Итоговая сумма
             total_pay=total_pay
         )
@@ -295,7 +313,7 @@ async def get_combined_data_sorted():
                 "type": "request",
                 "timestamp": r.timestamp,
                 "point_id": r.point_id,
-                "user_id": r.user_id,  # Добавлено
+                "user_id": r.user_id,
                 "activity": r.activity,
                 "pet": r.pet_bag or 0,
                 "aluminum": r.aluminum_bag or 0,
@@ -313,42 +331,47 @@ async def get_combined_data_sorted():
                 "timestamp": s.timestamp,
                 "point_id": s.point_id,
                 "user_id": s.user_id,
+                # Основные материалы
                 "pet_kg": s.pet_kg,
                 "pet_price": s.pet_price,
                 "pet_total": s.pet_total,
+                "paper_kg": s.paper_kg,
+                "paper_price": s.paper_price,
+                "paper_total": s.paper_total,
                 "alum_kg": s.alum_kg,
                 "alum_price": s.alum_price,
                 "alum_total": s.alum_total,
                 "glass_kg": s.glass_kg,
                 "glass_price": s.glass_price,
                 "glass_total": s.glass_total,
-                "paper_kg": s.paper_kg,
-                "paper_price": s.paper_price,
-                "paper_total": s.paper_total,
-                "metal_kg": s.metal_kg,
-                "metal_price": s.metal_price,
-                "metal_total": s.metal_total,
+                "small_beer_box_kg": s.small_beer_box_kg,
+                "small_beer_box_price": s.small_beer_box_price,
+                "small_beer_box_total": s.small_beer_box_total,
+                "large_beer_box_kg": s.large_beer_box_kg,
+                "large_beer_box_price": s.large_beer_box_price,
+                "large_beer_box_total": s.large_beer_box_total,
+                "mixed_beer_box_kg": s.mixed_beer_box_kg,
+                "mixed_beer_box_price": s.mixed_beer_box_price,
+                "mixed_beer_box_total": s.mixed_beer_box_total,
+                # Другие материалы
                 "oil_kg": s.oil_kg,
                 "oil_price": s.oil_price,
                 "oil_total": s.oil_total,
+                "colored_plastic_kg": s.colored_plastic_kg,
+                "colored_plastic_price": s.colored_plastic_price,
+                "colored_plastic_total": s.colored_plastic_total,
+                "iron_kg": s.iron_kg,
+                "iron_price": s.iron_price,
+                "iron_total": s.iron_total,
+                "plastic_bag_kg": s.plastic_bag_kg,
+                "plastic_bag_price": s.plastic_bag_price,
+                "plastic_bag_total": s.plastic_bag_total,
+                "mix_kg": s.mix_kg,
+                "mix_price": s.mix_price,
+                "mix_total": s.mix_total,
                 "other_kg": s.other_kg,
                 "other_price": s.other_price,
                 "other_total": s.other_total,
-                "alum_pl_mix_kg": s.alum_pl_mix_kg,
-                "alum_pl_mix_price": s.alum_pl_mix_price,
-                "alum_pl_mix_total": s.alum_pl_mix_total,
-                "alum_pl_glass_mix_kg": s.alum_pl_glass_mix_kg,
-                "alum_pl_glass_mix_price": s.alum_pl_glass_mix_price,
-                "alum_pl_glass_mix_total": s.alum_pl_glass_mix_total,
-                "alum_iron_cans_mix_kg": s.alum_iron_cans_mix_kg,
-                "alum_iron_cans_mix_price": s.alum_iron_cans_mix_price,
-                "alum_iron_cans_mix_total": s.alum_iron_cans_mix_total,
-                "pet_mix_kg": s.pet_mix_kg,
-                "pet_mix_price": s.pet_mix_price,
-                "pet_mix_total": s.pet_mix_total,
-                "other_mix_kg": s.other_mix_kg,
-                "other_mix_price": s.other_mix_price,
-                "other_mix_total": s.other_mix_total,
                 "total_pay": s.total_pay
             }
             for s in shipments

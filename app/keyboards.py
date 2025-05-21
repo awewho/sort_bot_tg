@@ -81,43 +81,45 @@ def cancel_keyboard():
         InlineKeyboardButton(text="❌ ยกเลิกการดำเนินการ", callback_data="cancel_operation")  # "Отменить операцию"
     )
     return builder.as_markup()
-
+    
 def get_category_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="หลัก", callback_data="category_main")],  # "Основные"
-        [InlineKeyboardButton(text="เสริม", callback_data="category_secondary")],  # "Дополнительные"
-        [InlineKeyboardButton(text="ผสม", callback_data="category_mix")],  # "Микс"
-        [InlineKeyboardButton(text="เสร็จสิ้น", callback_data="finish_shipment")],  # "Завершить"
+    buttons = [
+        [InlineKeyboardButton(text="วัสดุหลัก", callback_data="category_main")],
+        [InlineKeyboardButton(text="วัสดุอื่นๆ", callback_data="category_other")],
+        [InlineKeyboardButton(text="ยืนยัน", callback_data="confirm_shipment")],  # "Подтвердить"
         [InlineKeyboardButton(text="ยกเลิก", callback_data="cancel_shipment")]  # "Отменить"
-    ])
+    ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
 
 def get_main_materials_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="อลูมิเนียม", callback_data="material_alum")],  # "Алюминий"
-        [InlineKeyboardButton(text="พลาสติก (PET)", callback_data="material_pet")],  # "Пластик (PET)"
-        [InlineKeyboardButton(text="แก้ว", callback_data="material_glass")],  # "Стекло"
-        [InlineKeyboardButton(text="กลับ", callback_data="back_to_categories")]  # "Назад"
-    ])
+    buttons = [
+        [InlineKeyboardButton(text="Plastic PET", callback_data="material_pet")],
+        [InlineKeyboardButton(text="Paper", callback_data="material_paper")],
+        [InlineKeyboardButton(text="Aluminum", callback_data="material_alum")],
+        [InlineKeyboardButton(text="Glass", callback_data="material_glass")],
+        [InlineKeyboardButton(text="Small Beer Box", callback_data="material_small_beer_box")],
+        [InlineKeyboardButton(text="Large Beer Box", callback_data="material_large_beer_box")],
+        [InlineKeyboardButton(text="Mixed Beer Box", callback_data="material_mixed_beer_box")],
+        [InlineKeyboardButton(text="← กลับ", callback_data="back_to_categories")],
+    ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
 
-def get_secondary_materials_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="กระดาษ", callback_data="material_paper")],  # "Бумага"
-        [InlineKeyboardButton(text="โลหะ", callback_data="material_metal")],  # "Металл"
-        [InlineKeyboardButton(text="น้ำมัน", callback_data="material_oil")],  # "Масло"
-        [InlineKeyboardButton(text="อื่นๆ", callback_data="material_other")],  # "Прочие"
-        [InlineKeyboardButton(text="กลับ", callback_data="back_to_categories")]  # "Назад"
-    ])
 
-def get_mix_materials_keyboard():
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="อลูมิเนียม-พลาสติก", callback_data="material_alum_pl_mix")],  # "Алюм-пластик"
-        [InlineKeyboardButton(text="อลูมิเนียม-พลาสติก-แก้ว", callback_data="material_alum_pl_glass_mix")],  # "Алюм-пластик-стекло"
-        [InlineKeyboardButton(text="กระป๋องอลูมิเนียม-เหล็ก", callback_data="material_alum_iron_cans_mix")],  # "Алюм-железные банки"
-        [InlineKeyboardButton(text="พลาสติกผสม", callback_data="material_pet_mix")],  # "Смешанный пластик"
-        [InlineKeyboardButton(text="อื่นๆ ผสม", callback_data="material_other_mix")],  # "Прочий микс"
-        [InlineKeyboardButton(text="กลับ", callback_data="back_to_categories")]  # "Назад"
-    ])
 
+def get_other_materials_keyboard():
+    buttons = [
+        [InlineKeyboardButton(text="Oil", callback_data="material_oil")],
+        [InlineKeyboardButton(text="Colored Plastic", callback_data="material_colored_plastic")],
+        [InlineKeyboardButton(text="Iron", callback_data="material_iron")],
+        [InlineKeyboardButton(text="Plastic Bag or Container", callback_data="material_plastic_bag")],
+        [InlineKeyboardButton(text="Mix", callback_data="material_mix")],
+        [InlineKeyboardButton(text="Other", callback_data="material_other")],
+        [InlineKeyboardButton(text="← กลับ", callback_data="back_to_categories")],
+    ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
 def get_confirmation_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="ยืนยัน", callback_data="confirm_shipment")],  # "Подтвердить"

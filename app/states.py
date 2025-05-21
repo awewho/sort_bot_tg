@@ -14,35 +14,36 @@ class BagFull(StatesGroup):
 
 class Help(StatesGroup):
     request = State()
-
 class ShipmentStates(StatesGroup):
     point_id = State()
-    # Основные
-    alum_kg = State()
-    alum_price = State()
+    # Основные материалы
     pet_kg = State()
     pet_price = State()
-    glass_kg = State()
-    glass_price = State()
     paper_kg = State()
     paper_price = State()
-    metal_kg = State()
-    metal_price = State()
+    alum_kg = State()
+    alum_price = State()
+    glass_kg = State()
+    glass_price = State()
+    small_beer_box_kg = State()
+    small_beer_box_price = State()
+    large_beer_box_kg = State()
+    large_beer_box_price = State()
+    mixed_beer_box_kg = State()
+    mixed_beer_box_price = State()
+    # Другие материалы
     oil_kg = State()
     oil_price = State()
+    colored_plastic_kg = State()
+    colored_plastic_price = State()
+    iron_kg = State()
+    iron_price = State()
+    plastic_bag_kg = State()
+    plastic_bag_price = State()
+    mix_kg = State()
+    mix_price = State()
     other_kg = State()
     other_price = State()
-    # Микс
-    alum_pl_mix_kg = State()
-    alum_pl_mix_price = State()
-    alum_pl_glass_mix_kg = State()
-    alum_pl_glass_mix_price = State()
-    alum_iron_cans_mix_kg = State()
-    alum_iron_cans_mix_price = State()
-    pet_mix_kg = State()
-    pet_mix_price = State()
-    other_mix_kg = State()
-    other_mix_price = State()
 
 
 class Reports(StatesGroup):

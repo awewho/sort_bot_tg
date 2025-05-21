@@ -78,53 +78,69 @@ class Request(Base):
     other: Mapped[int] = mapped_column(Integer, nullable=True)  # Количество мешков с другим
 
 
-
 class Shipment(Base):
     __tablename__ = 'shipments'
     
     shipment_id: Mapped[int] = mapped_column(primary_key=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     point_id: Mapped[int] = mapped_column(ForeignKey('points.point_id'))
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.tg_id')) 
-    alum_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_price: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_total: Mapped[float] = mapped_column(Float, default=0.0)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.tg_id'))
+    
+    # Основные материалы (категория 1)
     pet_kg: Mapped[float] = mapped_column(Float, default=0.0)
     pet_price: Mapped[float] = mapped_column(Float, default=0.0)
     pet_total: Mapped[float] = mapped_column(Float, default=0.0)
-    glass_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    glass_price: Mapped[float] = mapped_column(Float, default=0.0)
-    glass_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
     paper_kg: Mapped[float] = mapped_column(Float, default=0.0)
     paper_price: Mapped[float] = mapped_column(Float, default=0.0)
     paper_total: Mapped[float] = mapped_column(Float, default=0.0)
-    metal_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    metal_price: Mapped[float] = mapped_column(Float, default=0.0)
-    metal_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    alum_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_price: Mapped[float] = mapped_column(Float, default=0.0)
+    alum_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    glass_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    glass_price: Mapped[float] = mapped_column(Float, default=0.0)
+    glass_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    small_beer_box_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    small_beer_box_price: Mapped[float] = mapped_column(Float, default=0.0)
+    small_beer_box_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    large_beer_box_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    large_beer_box_price: Mapped[float] = mapped_column(Float, default=0.0)
+    large_beer_box_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    mixed_beer_box_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    mixed_beer_box_price: Mapped[float] = mapped_column(Float, default=0.0)
+    mixed_beer_box_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    # Другие материалы (категория 2)
     oil_kg: Mapped[float] = mapped_column(Float, default=0.0)
     oil_price: Mapped[float] = mapped_column(Float, default=0.0)
     oil_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    colored_plastic_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    colored_plastic_price: Mapped[float] = mapped_column(Float, default=0.0)
+    colored_plastic_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    iron_kg: Mapped[float] = mapped_column(Float, default=0.0)  # Заменил metal на iron
+    iron_price: Mapped[float] = mapped_column(Float, default=0.0)
+    iron_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    plastic_bag_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    plastic_bag_price: Mapped[float] = mapped_column(Float, default=0.0)
+    plastic_bag_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
+    mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
+    mix_price: Mapped[float] = mapped_column(Float, default=0.0)
+    mix_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
     other_kg: Mapped[float] = mapped_column(Float, default=0.0)
     other_price: Mapped[float] = mapped_column(Float, default=0.0)
     other_total: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_pl_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_pl_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_pl_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_pl_glass_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_pl_glass_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_pl_glass_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_iron_cans_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_iron_cans_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
-    alum_iron_cans_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
-    pet_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    pet_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
-    pet_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
-    other_mix_kg: Mapped[float] = mapped_column(Float, default=0.0)
-    other_mix_price: Mapped[float] = mapped_column(Float, default=0.0)
-    other_mix_total: Mapped[float] = mapped_column(Float, default=0.0)
+    
     total_pay: Mapped[float] = mapped_column(Float, default=0.0)
-
-
 async def async_main():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
